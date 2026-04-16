@@ -5,6 +5,8 @@ import {
 } from "@/utils/portfolioRepository";
 import { readAdminSession } from "@/utils/adminSession";
 
+export const runtime = "edge";
+
 const unauthorized = () =>
   NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

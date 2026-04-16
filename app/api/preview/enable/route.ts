@@ -2,6 +2,8 @@
 import { NextResponse } from "next/server";
 import { readAdminSession } from "@/utils/adminSession";
 
+export const runtime = "edge";
+
 export async function GET(request: Request) {
   const session = await readAdminSession();
 
@@ -17,4 +19,3 @@ export async function GET(request: Request) {
 
   return NextResponse.redirect(new URL(redirectTo, request.url));
 }
-

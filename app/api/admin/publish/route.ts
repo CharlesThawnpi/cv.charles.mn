@@ -2,6 +2,8 @@
 import { publishPortfolioData } from "@/utils/portfolioRepository";
 import { readAdminSession } from "@/utils/adminSession";
 
+export const runtime = "edge";
+
 export async function POST() {
   const session = await readAdminSession();
 
@@ -17,4 +19,3 @@ export async function POST() {
     publishedAt: result.record.publishedAt,
   });
 }
-

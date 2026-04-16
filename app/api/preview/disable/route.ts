@@ -1,6 +1,8 @@
 ﻿import { draftMode } from "next/headers";
 import { NextResponse } from "next/server";
 
+export const runtime = "edge";
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const redirectTo = url.searchParams.get("redirect") || "/";
@@ -10,4 +12,3 @@ export async function GET(request: Request) {
 
   return NextResponse.redirect(new URL(redirectTo, request.url));
 }
-

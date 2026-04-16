@@ -45,6 +45,8 @@ This project uses dynamic Next.js features (`app` routes, API routes, auth cooki
 
 Cloudflare's Next.js Pages docs currently route full-stack Next.js users toward the Workers guide, while Pages build settings still provide a Next.js preset using `@cloudflare/next-on-pages`.
 
+For Cloudflare compatibility, this project keeps request-guard logic in `middleware.ts` (edge-compatible) instead of `proxy.ts` because Next 16 `proxy.ts` is Node runtime by default.
+
 For Pages deployment, use the Next.js preset values below.
 
 ### Pages Build Settings

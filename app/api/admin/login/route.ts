@@ -5,6 +5,8 @@ import {
   validateAdminCredentials,
 } from "@/utils/adminSession";
 
+export const runtime = "edge";
+
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as { email?: string; password?: string } | null;
 

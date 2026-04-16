@@ -3,6 +3,7 @@ import { PrintableCv } from "@/components/portfolio/PrintableCv";
 import { getPublicPortfolioData } from "@/utils/portfolioRepository";
 
 export const dynamic = "force-dynamic";
+export const runtime = "edge";
 
 export default async function CvPage() {
   const { isEnabled } = await draftMode();

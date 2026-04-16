@@ -1,6 +1,8 @@
 ﻿import { NextResponse } from "next/server";
 import { getAdminAuthStatus, readAdminSession } from "@/utils/adminSession";
 
+export const runtime = "edge";
+
 export async function GET() {
   const session = await readAdminSession();
   const authStatus = getAdminAuthStatus();
@@ -11,4 +13,3 @@ export async function GET() {
     authConfigured: authStatus.configured,
   });
 }
-

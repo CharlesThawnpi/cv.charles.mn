@@ -10,7 +10,7 @@ const PUBLIC_ADMIN_APIS = new Set([
   "/api/admin/logout",
 ]);
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const hasSession = Boolean(request.cookies.get(ADMIN_SESSION_COOKIE)?.value);
 
@@ -28,4 +28,3 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: ["/admin/dashboard/:path*", "/api/admin/:path*"],
 };
-
