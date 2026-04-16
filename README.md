@@ -1,4 +1,4 @@
-﻿# Charles Portfolio Platform
+# Charles Portfolio Platform
 
 Next.js App Router portfolio with draft/publish workflow, protected admin editor, preview mode, and printable CV.
 
@@ -12,24 +12,24 @@ Next.js App Router portfolio with draft/publish workflow, protected admin editor
    ```bash
    copy .env.example .env
    ```
-3. Start dev server:
+3. Start the app:
    ```bash
    npm run dev
    ```
-4. Production build check:
+4. Verify the production build:
    ```bash
    npm run build
    ```
 
-## GitHub Workflow (VS Code -> GitHub -> Cloudflare)
+## GitHub Workflow
 
-1. Create/modify code locally in VS Code.
-2. Validate locally:
+1. Make changes locally in VS Code.
+2. Verify locally:
    ```bash
    npm run build
    ```
 3. Commit and push to GitHub.
-4. Cloudflare Pages auto-deploys from the connected branch.
+4. Redeploy from Cloudflare Workers/OpenNext.
 
 Typical daily commands:
 
@@ -39,43 +39,54 @@ git commit -m "Describe change"
 git push
 ```
 
-## Cloudflare Pages Deployment
+## Cloudflare Deployment Model
 
-This project uses dynamic Next.js features (`app` routes, API routes, auth cookies, preview mode).
+This project should be deployed as **Cloudflare Workers with OpenNext**, not legacy Pages with `next-on-pages`.
 
-Cloudflare's Next.js Pages docs currently route full-stack Next.js users toward the Workers guide, while Pages build settings still provide a Next.js preset using `@cloudflare/next-on-pages`.
+The committed deployment files are:
 
-For Cloudflare compatibility, this project keeps request-guard logic in `middleware.ts` (edge-compatible) instead of `proxy.ts` because Next 16 `proxy.ts` is Node runtime by default.
+- `wrangler.jsonc`
+- `open-next.config.ts`
 
-For Pages deployment, use the Next.js preset values below.
+The worker name and self-reference service binding are both explicitly set to:
 
-### Pages Build Settings
-
-- Framework preset: `Next.js`
-- Build command: `npx @cloudflare/next-on-pages@1`
-- Build output directory: `.vercel/output/static`
-- Root directory: (leave blank unless you move this app into a monorepo)
-- Node version: set `NODE_VERSION=22`
-
-### Local Note About `build:pages`
-
-A helper script exists:
-
-```bash
-npm run build:pages
+```txt
+cv-charles-mn
 ```
 
-On Windows shells without `bash`, `@cloudflare/next-on-pages` can fail locally even though Cloudflare's Linux build environment can run it.
+That prevents OpenNext from inferring a sanitized name such as `cvcharlesmn`.
+
+## Cloudflare Build and Deploy
+
+Build the Worker bundle locally:
+
+```bash
+npm run cf:build
+```
+
+Preview locally with Wrangler:
+
+```bash
+npm run cf:preview
+```
+
+Deploy to Cloudflare:
+
+```bash
+npm run cf:deploy
+```
+
+If you deploy from the Cloudflare dashboard or CI, make sure it uses the committed `wrangler.jsonc` and `open-next.config.ts` files.
 
 ## Environment Variables
 
-### Required for local/admin auth
+### Required for admin auth
 
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
 - `ADMIN_SESSION_SECRET`
 
-### Optional (enables Firebase persistence)
+### Optional for Firebase persistence
 
 - `NEXT_PUBLIC_FIREBASE_API_KEY`
 - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
@@ -84,25 +95,23 @@ On Windows shells without `bash`, `@cloudflare/next-on-pages` can fail locally e
 - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
 - `NEXT_PUBLIC_FIREBASE_APP_ID`
 
-### In Cloudflare Pages
+### In Cloudflare
 
-Set these in **Workers & Pages -> <project> -> Settings -> Environment variables** for both:
-- Production
-- Preview
+Set the same runtime env vars in the Worker project before redeploying.
 
-Recommended minimum:
+Minimum recommended:
+
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
 - `ADMIN_SESSION_SECRET`
-- `NODE_VERSION=22`
 
-Add Firebase variables only when you want remote persistence.
+Add Firebase variables only when you want persistent remote content storage.
 
-## Custom Domain (Later)
+## Custom Domain
 
-After first successful deployment:
+After the Worker deploy succeeds:
 
-1. Open **Workers & Pages -> your project -> Custom domains**.
-2. Add your domain/subdomain.
-3. Follow DNS instructions shown by Cloudflare.
-4. Wait for SSL certificate issuance and verify routes.
+1. Open the Cloudflare Worker project.
+2. Add your custom domain or route.
+3. Follow the DNS prompts from Cloudflare.
+4. Verify `/`, `/cv`, `/admin/login`, and `/admin/dashboard`.
