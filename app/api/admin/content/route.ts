@@ -15,8 +15,17 @@ export async function GET() {
     return unauthorized();
   }
 
-  const data = await getAdminPortfolioData();
-  return NextResponse.json(data);
+  try {
+    const data = await getAdminPortfolioData();
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error("[api/admin/content] failed to load admin content", {
+      user: session.email,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+
+    return NextResponse.json({ error: "Unable to load admin content." }, { status: 500 });
+  }
 }
 
 export async function PUT(request: Request) {
@@ -32,12 +41,24 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Invalid request payload." }, { status: 400 });
   }
 
-  const result = await saveDraftPortfolioData(body);
+  try {
+    const result = await saveDraftPortfolioData(body);
 
-  return NextResponse.json({
-    ok: true,
-    source: result.source,
-    updatedAt: result.record.updatedAt,
-  });
+    return NextResponse.json({
+      ok: true,
+      source: result.source,
+      updatedAt: result.record.updatedAt,
+    });
+  } catch (error) {
+    console.error("[api/admin/content] failed to save draft", {
+      user: session.email,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+
+    return NextResponse.json(
+      { error: "Save failed. Check server logs for Firestore connectivity or permissions." },
+      { status: 500 }
+    );
+  }
 }
 

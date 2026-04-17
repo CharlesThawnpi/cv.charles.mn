@@ -11,6 +11,7 @@ import { firestoreDb, hasFirebaseConfig } from "@/firebase/firebaseConfig";
 
 const PORTFOLIO_COLLECTION = "portfolio";
 const PORTFOLIO_DOCUMENT = "content";
+const FIRESTORE_TIMEOUT_MS = 8000;
 
 declare global {
   // eslint-disable-next-line no-var
@@ -27,6 +28,27 @@ const getFallbackRecord = (): PortfolioRecord => {
 
 const setFallbackRecord = (record: PortfolioRecord) => {
   globalThis.__portfolioRecordFallback = record;
+};
+
+const getPortfolioDocumentPath = () => `${PORTFOLIO_COLLECTION}/${PORTFOLIO_DOCUMENT}`;
+
+const withTimeout = async <T>(operation: Promise<T>, label: string): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`${label} timed out after ${FIRESTORE_TIMEOUT_MS}ms`));
+        }, FIRESTORE_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }
 };
 
 const normalizePortfolioRecord = (input: unknown): PortfolioRecord => {
@@ -57,9 +79,18 @@ const readFirestoreRecord = async (): Promise<PortfolioRecord | null> => {
   }
 
   const ref = doc(firestoreDb, PORTFOLIO_COLLECTION, PORTFOLIO_DOCUMENT);
-  const snapshot = await getDoc(ref);
+  console.info("[portfolioRepository] reading Firestore record", {
+    path: getPortfolioDocumentPath(),
+  });
+  const snapshot = await withTimeout(
+    getDoc(ref),
+    `Firestore read for ${getPortfolioDocumentPath()}`
+  );
 
   if (!snapshot.exists()) {
+    console.info("[portfolioRepository] Firestore record missing", {
+      path: getPortfolioDocumentPath(),
+    });
     return null;
   }
 
@@ -72,7 +103,15 @@ const writeFirestoreRecord = async (record: PortfolioRecord): Promise<void> => {
   }
 
   const ref = doc(firestoreDb, PORTFOLIO_COLLECTION, PORTFOLIO_DOCUMENT);
-  await setDoc(ref, record, { merge: false });
+  console.info("[portfolioRepository] writing Firestore record", {
+    path: getPortfolioDocumentPath(),
+    updatedAt: record.updatedAt,
+    publishedAt: record.publishedAt,
+  });
+  await withTimeout(
+    setDoc(ref, record, { merge: false }),
+    `Firestore write for ${getPortfolioDocumentPath()}`
+  );
 };
 
 const getRecord = async (): Promise<{ record: PortfolioRecord; source: "firebase" | "local" }> => {
@@ -144,6 +183,10 @@ export const getAdminPortfolioData = async (): Promise<PortfolioAdminResult> => 
 export const saveDraftPortfolioData = async (
   input: unknown
 ): Promise<{ source: "firebase" | "local"; record: PortfolioRecord }> => {
+  console.info("[portfolioRepository] saveDraftPortfolioData start", {
+    firebaseConfigured: hasFirebaseConfig,
+    path: getPortfolioDocumentPath(),
+  });
   const { record } = await getRecord();
 
   const nextRecord: PortfolioRecord = {
@@ -153,6 +196,11 @@ export const saveDraftPortfolioData = async (
   };
 
   const source = await persistRecord(nextRecord);
+  console.info("[portfolioRepository] saveDraftPortfolioData complete", {
+    source,
+    path: getPortfolioDocumentPath(),
+    updatedAt: nextRecord.updatedAt,
+  });
   return { source, record: nextRecord };
 };
 
@@ -160,6 +208,10 @@ export const publishPortfolioData = async (): Promise<{
   source: "firebase" | "local";
   record: PortfolioRecord;
 }> => {
+  console.info("[portfolioRepository] publishPortfolioData start", {
+    firebaseConfigured: hasFirebaseConfig,
+    path: getPortfolioDocumentPath(),
+  });
   const { record } = await getRecord();
   const now = new Date().toISOString();
 
@@ -171,6 +223,11 @@ export const publishPortfolioData = async (): Promise<{
   };
 
   const source = await persistRecord(nextRecord);
+  console.info("[portfolioRepository] publishPortfolioData complete", {
+    source,
+    path: getPortfolioDocumentPath(),
+    publishedAt: nextRecord.publishedAt,
+  });
   return { source, record: nextRecord };
 };
 
