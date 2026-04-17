@@ -14,54 +14,52 @@ export function PortfolioHome({ content, source, mode }: PortfolioHomeProps) {
       <div className="aurora-layer" aria-hidden="true" />
 
       <header className="hero-wrap">
-        <div className="hero-grid">
-          <div className="hero-copy">
-            <div className="hero-topbar">
-              <span className="status-pill">{mode === "preview" ? "Previewing Draft" : "Published"}</span>
-              <span className="status-pill">Data source: {source}</span>
-            </div>
-
-            <p className="hero-kicker">{content.profile.name}</p>
-            <h1>{content.hero.headline}</h1>
-            <p className="hero-description">{content.hero.subtext}</p>
-
-            <div className="hero-actions">
-              <Link className="hero-primary-link" href="/cv">
-                Open Printable CV
-              </Link>
-              <a className="hero-secondary-link" href={`mailto:${content.contact.email}`}>
-                Contact Charles
-              </a>
-            </div>
-
-            <div className="hero-meta">
-              <strong>{content.profile.title}</strong>
-              <span>{content.profile.location}</span>
-              <span>{content.skills[0] ?? "ICT Leadership"}</span>
-            </div>
+        <div className="hero-copy">
+          <div className="hero-topbar">
+            <span className="status-pill">{mode === "preview" ? "Previewing Draft" : "Published"}</span>
+            <span className="status-pill">Data source: {source}</span>
           </div>
 
-          <aside className="hero-side">
-            <article className="hero-side-card glass-panel">
-              <span className="card-label">Profile</span>
-              <strong>{content.profile.title}</strong>
-              <p>{content.profile.bio}</p>
-            </article>
+          <p className="hero-kicker">{content.profile.name}</p>
+          <h1>{content.hero.headline}</h1>
+          <p className="hero-description">{content.hero.subtext}</p>
 
-            <div className="hero-side-grid">
-              <article className="hero-stat-card glass-panel">
-                <span className="card-label">Career Journey</span>
-                <strong>{content.experience.length} roles</strong>
-                <p>Progression from volunteer support into strategic ICT leadership.</p>
-              </article>
+          <div className="hero-actions">
+            <Link className="hero-primary-link" href="/cv">
+              Open Printable CV
+            </Link>
+            <a className="hero-secondary-link" href={`mailto:${content.contact.email}`}>
+              Contact Charles
+            </a>
+          </div>
 
-              <article className="hero-stat-card glass-panel">
-                <span className="card-label">Operational Focus</span>
-                <strong>{content.projects.length} key initiatives</strong>
-                <p>Infrastructure, collaboration systems, and resilient support delivery.</p>
-              </article>
+          <div className="hero-meta">
+            <strong>{content.profile.title}</strong>
+            <span>{content.profile.location}</span>
+            <span>{content.skills[0] ?? "ICT Leadership"}</span>
+          </div>
+        </div>
+
+        <div className="hero-support">
+          <p className="hero-support-intro">
+            Quietly reliable ICT leadership grounded in infrastructure continuity, practical support, and
+            mission-aligned execution.
+          </p>
+
+          <dl className="hero-support-list">
+            <div>
+              <dt>Experience</dt>
+              <dd>{content.experience.length} roles across KMSS National Office</dd>
             </div>
-          </aside>
+            <div>
+              <dt>Core strengths</dt>
+              <dd>Infrastructure, support systems, Microsoft 365, and resilient daily operations</dd>
+            </div>
+            <div>
+              <dt>Selected work</dt>
+              <dd>{content.projects.length} portfolio-backed initiatives and operational improvements</dd>
+            </div>
+          </dl>
         </div>
       </header>
 
