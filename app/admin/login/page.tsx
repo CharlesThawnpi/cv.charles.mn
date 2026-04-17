@@ -62,7 +62,8 @@ export default function AdminLoginPage() {
 
         {!authConfigured && (
           <div className="admin-warning">
-            Admin auth is not configured yet. Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in your env.
+            Admin auth is not configured yet. Set `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and
+            `ADMIN_SESSION_SECRET` in your env.
           </div>
         )}
 

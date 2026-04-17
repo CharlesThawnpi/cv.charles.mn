@@ -1,7 +1,5 @@
-﻿import { draftMode } from "next/headers";
+import { draftMode } from "next/headers";
 import { NextResponse } from "next/server";
-
-export const runtime = "edge";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);

@@ -7,15 +7,19 @@ import { ADMIN_SESSION_COOKIE } from "@/utils/constants";
 
 const SESSION_DURATION_MS = 1000 * 60 * 60 * 12;
 
-const defaultAdminEmail = "admin@local.dev";
-const adminEmail = process.env.ADMIN_EMAIL ?? defaultAdminEmail;
-const adminPassword = process.env.ADMIN_PASSWORD ?? "";
-const adminSessionSecret = process.env.ADMIN_SESSION_SECRET ?? "change-me-local-session-secret";
-
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
 let signingKeyPromise: Promise<CryptoKey> | null = null;
+let signingKeySecret = "";
+
+const getAdminEnv = () => {
+  return {
+    adminEmail: process.env.ADMIN_EMAIL?.trim() ?? "",
+    adminPassword: process.env.ADMIN_PASSWORD ?? "",
+    adminSessionSecret: process.env.ADMIN_SESSION_SECRET ?? "",
+  };
+};
 
 const bytesToBase64 = (bytes: Uint8Array): string => {
   let binary = "";
@@ -55,7 +59,14 @@ const bytesToBase64Url = (bytes: Uint8Array): string => {
 };
 
 const getSigningKey = async (): Promise<CryptoKey> => {
-  if (!signingKeyPromise) {
+  const { adminSessionSecret } = getAdminEnv();
+
+  if (!adminSessionSecret) {
+    throw new Error("ADMIN_SESSION_SECRET is required to sign admin sessions.");
+  }
+
+  if (!signingKeyPromise || signingKeySecret !== adminSessionSecret) {
+    signingKeySecret = adminSessionSecret;
     signingKeyPromise = crypto.subtle.importKey(
       "raw",
       textEncoder.encode(adminSessionSecret),
@@ -121,17 +132,22 @@ const parseToken = async (token: string): Promise<{ email: string; exp: number }
 };
 
 export const isAdminAuthConfigured = () => {
-  return adminPassword.length > 0;
+  const { adminEmail, adminPassword, adminSessionSecret } = getAdminEnv();
+  return adminEmail.length > 0 && adminPassword.length > 0 && adminSessionSecret.length > 0;
 };
 
 export const getAdminAuthStatus = () => {
+  const { adminEmail } = getAdminEnv();
+
   return {
     configured: isAdminAuthConfigured(),
-    email: adminEmail,
+    email: adminEmail || null,
   };
 };
 
 export const validateAdminCredentials = (email: string, password: string) => {
+  const { adminEmail, adminPassword } = getAdminEnv();
+
   if (!isAdminAuthConfigured()) {
     return false;
   }
@@ -158,6 +174,10 @@ export const clearAdminSession = async () => {
 };
 
 export const readAdminSession = async (): Promise<{ email: string } | null> => {
+  if (!isAdminAuthConfigured()) {
+    return null;
+  }
+
   const cookieStore = await cookies();
   const rawToken = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
 

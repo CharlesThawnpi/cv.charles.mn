@@ -5,8 +5,6 @@ import {
   validateAdminCredentials,
 } from "@/utils/adminSession";
 
-export const runtime = "edge";
-
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as { email?: string; password?: string } | null;
 
@@ -20,7 +18,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Admin authentication is not configured. Set ADMIN_EMAIL and ADMIN_PASSWORD in your environment.",
+          "Admin authentication is not configured. Set ADMIN_EMAIL, ADMIN_PASSWORD, and ADMIN_SESSION_SECRET in your environment.",
       },
       { status: 503 }
     );

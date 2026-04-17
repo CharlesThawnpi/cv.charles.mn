@@ -1,167 +1,196 @@
-export const runtime = "edge";
+import { draftMode } from "next/headers";
+import { getPublicPortfolioData } from "@/utils/portfolioRepository";
 
-const cvContent = {
-  profile: {
-    name: "Charles",
-    title: "ICT / IT Manager",
-    bio: "ICT / IT Manager at KMSS National Office, Myanmar. I build dependable systems, support teams, and keep mission-critical operations running.",
-    location: "Yangon, Myanmar",
-  },
-  experience: [
-    {
-      company: "KMSS National Office",
-      role: "ICT / IT Manager",
-      duration: "2023 - Present",
-      details:
-        "Lead ICT strategy, operations support, infrastructure improvements, and cross-team technical coordination.",
-    },
-    {
-      company: "KMSS National Office",
-      role: "IT Officer",
-      duration: "2020 - 2023",
-      details:
-        "Managed user support, networking, systems administration, and business-critical IT services.",
-    },
-    {
-      company: "KMSS National Office",
-      role: "IT Volunteer",
-      duration: "2018 - 2020",
-      details:
-        "Supported daily operations, device setup, connectivity troubleshooting, and on-site technical assistance.",
-    },
-  ],
-  certifications: [
-    {
-      name: "Microsoft 365 Administration",
-      issuer: "Microsoft Learn",
-      date: "2024",
-    },
-    {
-      name: "Network Administration Fundamentals",
-      issuer: "Cisco Networking Academy",
-      date: "2023",
-    },
-  ],
-  skills: [
-    "IT Support",
-    "Systems Administration",
-    "Networking & Infrastructure",
-    "Windows Server",
-    "Microsoft 365",
-    "Troubleshooting",
-    "Website Administration",
-    "Conferencing Systems",
-  ],
-  tools: [
-    "Microsoft 365 Admin Center",
-    "Windows Server Tools",
-    "Remote Support Tooling",
-    "Network Monitoring Utilities",
-    "CCTV Management Systems",
-  ],
-  projects: [
-    {
-      name: "National Office Infrastructure Stabilization",
-      description:
-        "Improved system reliability and support responsiveness across office operations by standardizing network and device practices.",
-    },
-    {
-      name: "Hybrid Collaboration Setup",
-      description:
-        "Delivered meeting-room conferencing and support flows for distributed coordination across teams.",
-    },
-  ],
-  achievements: [
-    "Reduced recurring IT downtime through proactive support routines",
-    "Strengthened operational readiness for remote and on-site collaboration",
-    "Helped modernize office workflows with practical, low-risk improvements",
-  ],
-  contact: {
-    email: "charles@example.com",
-    phone: "+95 9 xxx xxx xxx",
-    linkedin: "https://linkedin.com",
-    website: "",
-  },
-} as const;
+export const dynamic = "force-dynamic";
 
-export default function CvPage() {
+export default async function CvPage() {
+  const { isEnabled } = await draftMode();
+  const data = await getPublicPortfolioData(isEnabled);
+  const { content, mode, source } = data;
+
   return (
     <main className="cv-page">
-      <header className="cv-header no-print">
-        <a href="/">Back to Portfolio</a>
-        <div>
-          <span>Printable CV</span>
-          <span>Use browser Print to save as PDF</span>
-        </div>
-      </header>
+      <div className="cv-shell">
+        <header className="cv-header no-print">
+          <a href="/">Back to Portfolio</a>
+          <div className="cv-actions">
+            <span>{mode === "preview" ? "Previewing Draft CV" : "Printable CV"}</span>
+            <span>Source: {source}</span>
+            <span>Use browser Print to save as PDF</span>
+          </div>
+        </header>
 
-      <article className="cv-sheet">
-        <section className="cv-identity">
-          <h1>{cvContent.profile.name}</h1>
-          <h2>{cvContent.profile.title}</h2>
-          <p>{cvContent.profile.location}</p>
-          <p>{cvContent.profile.bio}</p>
-        </section>
+        <article className="cv-sheet">
+          <section className="cv-hero">
+            <div className="cv-kicker">Curriculum Vitae</div>
+            <div className="cv-hero-grid">
+              <div className="cv-identity">
+                <h1>{content.profile.name}</h1>
+                <h2>{content.profile.title}</h2>
+                <p className="cv-lead">{content.profile.bio}</p>
+              </div>
 
-        <section className="cv-section">
-          <h3>Experience</h3>
-          {cvContent.experience.map((item, index) => (
-            <div key={`${item.company}-${index}`} className="cv-item">
-              <p className="cv-item-heading">
-                <strong>{item.role}</strong>
-                <span>{item.duration}</span>
-              </p>
-              <p className="cv-item-subheading">{item.company}</p>
-              <p>{item.details}</p>
+              <aside className="cv-panel cv-contact-panel">
+                <p>
+                  <span>Location</span>
+                  <strong>{content.profile.location}</strong>
+                </p>
+                <p>
+                  <span>Email</span>
+                  <strong>{content.contact.email}</strong>
+                </p>
+                {content.contact.phone && (
+                  <p>
+                    <span>Phone</span>
+                    <strong>{content.contact.phone}</strong>
+                  </p>
+                )}
+                {content.contact.linkedin && (
+                  <p>
+                    <span>LinkedIn</span>
+                    <strong>{content.contact.linkedin}</strong>
+                  </p>
+                )}
+                {content.contact.github && (
+                  <p>
+                    <span>GitHub</span>
+                    <strong>{content.contact.github}</strong>
+                  </p>
+                )}
+                {content.contact.website && (
+                  <p>
+                    <span>Website</span>
+                    <strong>{content.contact.website}</strong>
+                  </p>
+                )}
+              </aside>
             </div>
-          ))}
-        </section>
 
-        <section className="cv-section">
-          <h3>Skills &amp; Tools</h3>
-          <p>{cvContent.skills.join(" | ")}</p>
-          <p className="cv-muted">{cvContent.tools.join(" | ")}</p>
-        </section>
+            <div className="cv-band">
+              {content.skills.slice(0, 3).map((skill) => (
+                <span key={skill}>{skill}</span>
+              ))}
+            </div>
+          </section>
 
-        <section className="cv-section">
-          <h3>Certifications</h3>
-          <ul>
-            {cvContent.certifications.map((item, index) => (
-              <li key={`${item.name}-${index}`}>
-                {item.name} - {item.issuer} ({item.date})
-              </li>
-            ))}
-          </ul>
-        </section>
+          <section className="cv-section">
+            <h3>Professional Summary</h3>
+            <div className="cv-panel">
+              <p className="cv-summary">{content.about.description}</p>
+            </div>
+          </section>
 
-        <section className="cv-section">
-          <h3>Projects / Key Work</h3>
-          <ul>
-            {cvContent.projects.map((project, index) => (
-              <li key={`${project.name}-${index}`}>
-                <strong>{project.name}:</strong> {project.description}
-              </li>
-            ))}
-          </ul>
-        </section>
+          <section className="cv-section">
+            <h3>Experience</h3>
+            <div className="cv-stack">
+              {content.experience.map((item, index) => (
+                <div key={`${item.company}-${index}`} className="cv-item cv-panel">
+                  <p className="cv-item-heading">
+                    <strong>{item.role}</strong>
+                    <span>{item.duration}</span>
+                  </p>
+                  <p className="cv-item-subheading">{item.company}</p>
+                  <p>{item.details}</p>
+                </div>
+              ))}
+            </div>
+          </section>
 
-        <section className="cv-section">
-          <h3>Achievements</h3>
-          <ul>
-            {cvContent.achievements.map((achievement) => (
-              <li key={achievement}>{achievement}</li>
-            ))}
-          </ul>
-        </section>
+          <div className="cv-grid">
+            <section className="cv-section cv-panel">
+              <h3>Skills</h3>
+              <ul className="cv-chip-list">
+                {content.skills.map((skill) => (
+                  <li key={skill}>{skill}</li>
+                ))}
+              </ul>
+            </section>
 
-        <section className="cv-section">
-          <h3>Contact</h3>
-          <p>{cvContent.contact.email}</p>
-          <p>{cvContent.contact.phone}</p>
-          <p>{cvContent.contact.linkedin}</p>
-          {cvContent.contact.website && <p>{cvContent.contact.website}</p>}
-        </section>
-      </article>
+            <section className="cv-section cv-panel">
+              <h3>Tools</h3>
+              <ul className="cv-chip-list cv-chip-list-muted">
+                {content.tools.map((tool) => (
+                  <li key={tool}>{tool}</li>
+                ))}
+              </ul>
+            </section>
+          </div>
+
+          <div className="cv-grid">
+            <section className="cv-section cv-panel">
+              <h3>Certifications</h3>
+              <ul className="cv-list">
+                {content.certifications.map((item, index) => (
+                  <li key={`${item.name}-${index}`}>
+                    <strong>{item.name}</strong>
+                    <span>
+                      {item.issuer} - {item.date}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="cv-section cv-panel">
+              <h3>Achievements</h3>
+              <ul className="cv-list">
+                {content.achievements.map((achievement) => (
+                  <li key={achievement}>{achievement}</li>
+                ))}
+              </ul>
+            </section>
+          </div>
+
+          <section className="cv-section">
+            <h3>Projects / Key Work</h3>
+            <div className="cv-grid">
+              {content.projects.map((project, index) => (
+                <article key={`${project.name}-${index}`} className="cv-panel cv-project-card">
+                  <strong>{project.name}</strong>
+                  <p>{project.description}</p>
+                  {project.link ? (
+                    <p className="cv-project-link">{project.link}</p>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="cv-section cv-panel">
+            <h3>Contact</h3>
+            <div className="cv-contact-grid">
+              <p>
+                <span>Email</span>
+                <strong>{content.contact.email}</strong>
+              </p>
+              {content.contact.phone && (
+                <p>
+                  <span>Phone</span>
+                  <strong>{content.contact.phone}</strong>
+                </p>
+              )}
+              {content.contact.linkedin && (
+                <p>
+                  <span>LinkedIn</span>
+                  <strong>{content.contact.linkedin}</strong>
+                </p>
+              )}
+              {content.contact.github && (
+                <p>
+                  <span>GitHub</span>
+                  <strong>{content.contact.github}</strong>
+                </p>
+              )}
+              {content.contact.website && (
+                <p>
+                  <span>Website</span>
+                  <strong>{content.contact.website}</strong>
+                </p>
+              )}
+            </div>
+          </section>
+        </article>
+      </div>
     </main>
   );
 }

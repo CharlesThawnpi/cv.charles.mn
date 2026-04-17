@@ -21,6 +21,12 @@ Next.js App Router portfolio with draft/publish workflow, protected admin editor
    npm run build
    ```
 
+## Deployment Target
+
+This project is prepared for standard Vercel deployment using the default Next.js build pipeline.
+
+No Cloudflare Workers, OpenNext, Wrangler, or custom deployment wrapper is required.
+
 ## GitHub Workflow
 
 1. Make changes locally in VS Code.
@@ -29,56 +35,9 @@ Next.js App Router portfolio with draft/publish workflow, protected admin editor
    npm run build
    ```
 3. Commit and push to GitHub.
-4. Redeploy from Cloudflare Workers/OpenNext.
+4. Let Vercel deploy from the connected branch.
 
-Typical daily commands:
-
-```bash
-git add .
-git commit -m "Describe change"
-git push
-```
-
-## Cloudflare Deployment Model
-
-This project should be deployed as **Cloudflare Workers with OpenNext**, not legacy Pages with `next-on-pages`.
-
-The committed deployment files are:
-
-- `wrangler.jsonc`
-- `open-next.config.ts`
-
-The worker name and self-reference service binding are both explicitly set to:
-
-```txt
-cv-charles-mn
-```
-
-That prevents OpenNext from inferring a sanitized name such as `cvcharlesmn`.
-
-## Cloudflare Build and Deploy
-
-Build the Worker bundle locally:
-
-```bash
-npm run cf:build
-```
-
-Preview locally with Wrangler:
-
-```bash
-npm run cf:preview
-```
-
-Deploy to Cloudflare:
-
-```bash
-npm run cf:deploy
-```
-
-If you deploy from the Cloudflare dashboard or CI, make sure it uses the committed `wrangler.jsonc` and `open-next.config.ts` files.
-
-## Environment Variables
+## Required Environment Variables
 
 ### Required for admin auth
 
@@ -95,23 +54,24 @@ If you deploy from the Cloudflare dashboard or CI, make sure it uses the committ
 - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
 - `NEXT_PUBLIC_FIREBASE_APP_ID`
 
-### In Cloudflare
+If the Firebase variables are omitted, the app falls back to the local seeded content flow.
 
-Set the same runtime env vars in the Worker project before redeploying.
+## Vercel Setup
 
-Minimum recommended:
+Use the default Next.js project settings in Vercel:
 
-- `ADMIN_EMAIL`
-- `ADMIN_PASSWORD`
-- `ADMIN_SESSION_SECRET`
+- Framework preset: `Next.js`
+- Build command: `npm run build`
+- Install command: `npm install`
+- Output setting: leave default
 
-Add Firebase variables only when you want persistent remote content storage.
+Add the required environment variables in the Vercel project settings before deploying production.
 
-## Custom Domain
+## Important Routes
 
-After the Worker deploy succeeds:
+These routes are expected to work in the deployed app:
 
-1. Open the Cloudflare Worker project.
-2. Add your custom domain or route.
-3. Follow the DNS prompts from Cloudflare.
-4. Verify `/`, `/cv`, `/admin/login`, and `/admin/dashboard`.
+- `/`
+- `/cv`
+- `/admin/login`
+- `/admin/dashboard`

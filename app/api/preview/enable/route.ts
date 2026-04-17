@@ -1,8 +1,6 @@
-﻿import { draftMode } from "next/headers";
+import { draftMode } from "next/headers";
 import { NextResponse } from "next/server";
 import { readAdminSession } from "@/utils/adminSession";
-
-export const runtime = "edge";
 
 export async function GET(request: Request) {
   const session = await readAdminSession();

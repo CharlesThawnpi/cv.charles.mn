@@ -1,8 +1,6 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { publishPortfolioData } from "@/utils/portfolioRepository";
 import { readAdminSession } from "@/utils/adminSession";
-
-export const runtime = "edge";
 
 export async function POST() {
   const session = await readAdminSession();
