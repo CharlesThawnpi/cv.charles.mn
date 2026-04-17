@@ -1,13 +1,12 @@
-﻿import "server-only";
+import "server-only";
 
-import { doc, getDoc, setDoc } from "firebase/firestore";
 import {
   createSeededPortfolioRecord,
   normalizePortfolioContent,
   type PortfolioContent,
   type PortfolioRecord,
 } from "@/config/contentModel";
-import { firestoreDb, hasFirebaseConfig } from "@/firebase/firebaseConfig";
+import { firestoreAdminDb, hasFirebaseAdminConfig } from "@/firebase/firebaseAdmin";
 
 const PORTFOLIO_COLLECTION = "portfolio";
 const PORTFOLIO_DOCUMENT = "content";
@@ -73,22 +72,23 @@ const normalizePortfolioRecord = (input: unknown): PortfolioRecord => {
   };
 };
 
-const readFirestoreRecord = async (): Promise<PortfolioRecord | null> => {
-  if (!hasFirebaseConfig || !firestoreDb) {
+const readAdminFirestoreRecord = async (): Promise<PortfolioRecord | null> => {
+  if (!hasFirebaseAdminConfig || !firestoreAdminDb) {
     return null;
   }
 
-  const ref = doc(firestoreDb, PORTFOLIO_COLLECTION, PORTFOLIO_DOCUMENT);
-  console.info("[portfolioRepository] reading Firestore record", {
+  const ref = firestoreAdminDb.collection(PORTFOLIO_COLLECTION).doc(PORTFOLIO_DOCUMENT);
+  console.info("[portfolioRepository] reading Firestore Admin record", {
     path: getPortfolioDocumentPath(),
   });
+
   const snapshot = await withTimeout(
-    getDoc(ref),
-    `Firestore read for ${getPortfolioDocumentPath()}`
+    ref.get(),
+    `Firestore Admin read for ${getPortfolioDocumentPath()}`
   );
 
-  if (!snapshot.exists()) {
-    console.info("[portfolioRepository] Firestore record missing", {
+  if (!snapshot.exists) {
+    console.info("[portfolioRepository] Firestore Admin record missing", {
       path: getPortfolioDocumentPath(),
     });
     return null;
@@ -97,50 +97,71 @@ const readFirestoreRecord = async (): Promise<PortfolioRecord | null> => {
   return normalizePortfolioRecord(snapshot.data());
 };
 
-const writeFirestoreRecord = async (record: PortfolioRecord): Promise<void> => {
-  if (!hasFirebaseConfig || !firestoreDb) {
+const writeAdminFirestoreRecord = async (record: PortfolioRecord): Promise<void> => {
+  if (!hasFirebaseAdminConfig || !firestoreAdminDb) {
     return;
   }
 
-  const ref = doc(firestoreDb, PORTFOLIO_COLLECTION, PORTFOLIO_DOCUMENT);
-  console.info("[portfolioRepository] writing Firestore record", {
+  const ref = firestoreAdminDb.collection(PORTFOLIO_COLLECTION).doc(PORTFOLIO_DOCUMENT);
+  console.info("[portfolioRepository] writing Firestore Admin record", {
     path: getPortfolioDocumentPath(),
     updatedAt: record.updatedAt,
     publishedAt: record.publishedAt,
   });
+
   await withTimeout(
-    setDoc(ref, record, { merge: false }),
-    `Firestore write for ${getPortfolioDocumentPath()}`
+    ref.set(record),
+    `Firestore Admin write for ${getPortfolioDocumentPath()}`
   );
 };
 
-const getRecord = async (): Promise<{ record: PortfolioRecord; source: "firebase" | "local" }> => {
-  if (hasFirebaseConfig && firestoreDb) {
+const getRecord = async (mode: "strict" | "fallback"): Promise<{
+  record: PortfolioRecord;
+  source: "firebase" | "local";
+}> => {
+  if (hasFirebaseAdminConfig && firestoreAdminDb) {
     try {
-      const firebaseRecord = await readFirestoreRecord();
+      const firebaseRecord = await readAdminFirestoreRecord();
 
       if (firebaseRecord) {
         return { record: firebaseRecord, source: "firebase" };
       }
 
       const initialRecord = createSeededPortfolioRecord();
-      await writeFirestoreRecord(initialRecord);
+      await writeAdminFirestoreRecord(initialRecord);
       return { record: initialRecord, source: "firebase" };
     } catch (error) {
-      console.warn("Failed to read Firebase content, using local fallback.", error);
+      console.error("[portfolioRepository] Firestore Admin read failed", {
+        path: getPortfolioDocumentPath(),
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+
+      if (mode === "strict") {
+        throw error;
+      }
     }
   }
 
   return { record: getFallbackRecord(), source: "local" };
 };
 
-const persistRecord = async (record: PortfolioRecord): Promise<"firebase" | "local"> => {
-  if (hasFirebaseConfig && firestoreDb) {
+const persistRecord = async (
+  record: PortfolioRecord,
+  mode: "strict" | "fallback"
+): Promise<"firebase" | "local"> => {
+  if (hasFirebaseAdminConfig && firestoreAdminDb) {
     try {
-      await writeFirestoreRecord(record);
+      await writeAdminFirestoreRecord(record);
       return "firebase";
     } catch (error) {
-      console.warn("Failed to write Firebase content, using local fallback.", error);
+      console.error("[portfolioRepository] Firestore Admin write failed", {
+        path: getPortfolioDocumentPath(),
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+
+      if (mode === "strict") {
+        throw error;
+      }
     }
   }
 
@@ -161,7 +182,7 @@ export interface PortfolioAdminResult {
 }
 
 export const getPublicPortfolioData = async (isPreview: boolean): Promise<PortfolioPublicResult> => {
-  const { record, source } = await getRecord();
+  const { record, source } = await getRecord("fallback");
 
   return {
     content: isPreview ? record.draft : record.published,
@@ -171,12 +192,12 @@ export const getPublicPortfolioData = async (isPreview: boolean): Promise<Portfo
 };
 
 export const getAdminPortfolioData = async (): Promise<PortfolioAdminResult> => {
-  const { record, source } = await getRecord();
+  const { record, source } = await getRecord("strict");
 
   return {
     record,
     source,
-    firebaseConfigured: hasFirebaseConfig,
+    firebaseConfigured: hasFirebaseAdminConfig,
   };
 };
 
@@ -184,10 +205,10 @@ export const saveDraftPortfolioData = async (
   input: unknown
 ): Promise<{ source: "firebase" | "local"; record: PortfolioRecord }> => {
   console.info("[portfolioRepository] saveDraftPortfolioData start", {
-    firebaseConfigured: hasFirebaseConfig,
+    firebaseConfigured: hasFirebaseAdminConfig,
     path: getPortfolioDocumentPath(),
   });
-  const { record } = await getRecord();
+  const { record } = await getRecord("strict");
 
   const nextRecord: PortfolioRecord = {
     ...record,
@@ -195,7 +216,7 @@ export const saveDraftPortfolioData = async (
     updatedAt: new Date().toISOString(),
   };
 
-  const source = await persistRecord(nextRecord);
+  const source = await persistRecord(nextRecord, "strict");
   console.info("[portfolioRepository] saveDraftPortfolioData complete", {
     source,
     path: getPortfolioDocumentPath(),
@@ -209,10 +230,10 @@ export const publishPortfolioData = async (): Promise<{
   record: PortfolioRecord;
 }> => {
   console.info("[portfolioRepository] publishPortfolioData start", {
-    firebaseConfigured: hasFirebaseConfig,
+    firebaseConfigured: hasFirebaseAdminConfig,
     path: getPortfolioDocumentPath(),
   });
-  const { record } = await getRecord();
+  const { record } = await getRecord("strict");
   const now = new Date().toISOString();
 
   const nextRecord: PortfolioRecord = {
@@ -222,7 +243,7 @@ export const publishPortfolioData = async (): Promise<{
     publishedAt: now,
   };
 
-  const source = await persistRecord(nextRecord);
+  const source = await persistRecord(nextRecord, "strict");
   console.info("[portfolioRepository] publishPortfolioData complete", {
     source,
     path: getPortfolioDocumentPath(),
@@ -230,4 +251,3 @@ export const publishPortfolioData = async (): Promise<{
   });
   return { source, record: nextRecord };
 };
-

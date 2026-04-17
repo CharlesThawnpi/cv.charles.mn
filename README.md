@@ -53,8 +53,13 @@ No Cloudflare Workers, OpenNext, Wrangler, or custom deployment wrapper is requi
 - `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
 - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
 - `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `FIREBASE_ADMIN_PROJECT_ID`
+- `FIREBASE_ADMIN_CLIENT_EMAIL`
+- `FIREBASE_ADMIN_PRIVATE_KEY`
 
-If the Firebase variables are omitted, the app falls back to the local seeded content flow.
+For durable admin save/publish persistence on Vercel, set the `FIREBASE_ADMIN_*` variables from a Firebase service account.
+
+If the Firebase Admin variables are omitted, admin persistence falls back to the local seeded/in-memory content flow.
 
 ## Vercel Setup
 
@@ -66,6 +71,12 @@ Use the default Next.js project settings in Vercel:
 - Output setting: leave default
 
 Add the required environment variables in the Vercel project settings before deploying production.
+
+For Firebase Admin on Vercel:
+
+- `FIREBASE_ADMIN_PROJECT_ID`: your Firebase project ID
+- `FIREBASE_ADMIN_CLIENT_EMAIL`: service account client email
+- `FIREBASE_ADMIN_PRIVATE_KEY`: full private key string with `\n` line breaks preserved
 
 ## Important Routes
 
