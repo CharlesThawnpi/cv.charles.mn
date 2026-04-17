@@ -17,9 +17,11 @@ const toSlug = (value: string) =>
 export async function GET() {
   try {
     const { isEnabled } = await draftMode();
-    const { content, mode } = await getPublicPortfolioData(isEnabled);
+    const { content } = await getPublicPortfolioData(isEnabled);
     const portfolioUrl =
-      process.env.NEXT_PUBLIC_SITE_URL?.trim() || FALLBACK_PORTFOLIO_URL;
+      content.cv.portfolioUrl?.trim() ||
+      process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+      FALLBACK_PORTFOLIO_URL;
 
     const qrCodeDataUrl = await QRCode.toDataURL(portfolioUrl, {
       margin: 1,
@@ -33,7 +35,6 @@ export async function GET() {
     const pdfBuffer = await renderToBuffer(
       <CvPdfDocument
         content={content}
-        mode={mode}
         portfolioUrl={portfolioUrl}
         qrCodeDataUrl={qrCodeDataUrl}
       />

@@ -36,6 +36,7 @@ export interface CvContentCopy {
   documentLabel: string;
   backToPortfolioLabel: string;
   downloadLabel: string;
+  portfolioUrl: string;
   printableStatusLabel: string;
   previewStatusLabel: string;
   printHint: string;
@@ -261,6 +262,7 @@ const normalizeCvContentCopy = (
     documentLabel: asString(record.documentLabel, fallback.documentLabel),
     backToPortfolioLabel: asString(record.backToPortfolioLabel, fallback.backToPortfolioLabel),
     downloadLabel: asString(record.downloadLabel, fallback.downloadLabel),
+    portfolioUrl: asString(record.portfolioUrl, fallback.portfolioUrl),
     printableStatusLabel: asString(record.printableStatusLabel, fallback.printableStatusLabel),
     previewStatusLabel: asString(record.previewStatusLabel, fallback.previewStatusLabel),
     printHint: asString(record.printHint, fallback.printHint),
@@ -435,6 +437,7 @@ export const seededPortfolioContent: PortfolioContent = {
     documentLabel: "Curriculum Vitae",
     backToPortfolioLabel: "Back to Portfolio",
     downloadLabel: "Download PDF",
+    portfolioUrl: "https://cv-charles-mn.vercel.app",
     printableStatusLabel: "Printable CV",
     previewStatusLabel: "Previewing Draft CV",
     printHint: "Use browser Print to save as PDF",

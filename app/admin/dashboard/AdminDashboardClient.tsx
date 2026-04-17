@@ -718,6 +718,18 @@ export default function AdminDashboardClient() {
             />
           </label>
           <label>
+            CV / QR Portfolio URL
+            <input
+              value={draft.cv.portfolioUrl}
+              onChange={(event) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  cv: { ...prev.cv, portfolioUrl: event.target.value },
+                }))
+              }
+            />
+          </label>
+          <label>
             CV Back Link Label
             <input
               value={draft.cv.backToPortfolioLabel}
