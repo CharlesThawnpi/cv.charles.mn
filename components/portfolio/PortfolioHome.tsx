@@ -3,7 +3,7 @@ import type { PortfolioContent } from "@/config/contentModel";
 
 interface PortfolioHomeProps {
   content: PortfolioContent;
-  source: "firebase" | "local";
+  source: "postgres" | "local";
   mode: "published" | "preview";
 }
 

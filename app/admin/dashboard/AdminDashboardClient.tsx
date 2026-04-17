@@ -13,8 +13,8 @@ import {
 
 interface AdminContentResponse {
   record: PortfolioRecord;
-  source: "firebase" | "local";
-  firebaseConfigured: boolean;
+  source: "postgres" | "local";
+  postgresConfigured: boolean;
 }
 
 const splitLines = (value: string): string[] => {
@@ -27,8 +27,8 @@ const splitLines = (value: string): string[] => {
 export default function AdminDashboardClient() {
   const router = useRouter();
   const [draft, setDraft] = useState<PortfolioContent>(seededPortfolioContent);
-  const [source, setSource] = useState<"firebase" | "local">("local");
-  const [firebaseConfigured, setFirebaseConfigured] = useState(false);
+  const [source, setSource] = useState<"postgres" | "local">("local");
+  const [postgresConfigured, setPostgresConfigured] = useState(false);
   const [publishedAt, setPublishedAt] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,7 +49,8 @@ export default function AdminDashboardClient() {
     }
 
     if (!response.ok) {
-      setError("Unable to load admin content.");
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      setError(payload.error ?? "Unable to load admin content.");
       setLoading(false);
       return;
     }
@@ -57,7 +58,7 @@ export default function AdminDashboardClient() {
     const payload = (await response.json()) as AdminContentResponse;
     setDraft(payload.record.draft);
     setSource(payload.source);
-    setFirebaseConfigured(payload.firebaseConfigured);
+    setPostgresConfigured(payload.postgresConfigured);
     setPublishedAt(payload.record.publishedAt);
     setUpdatedAt(payload.record.updatedAt);
     setLoading(false);
@@ -78,7 +79,7 @@ export default function AdminDashboardClient() {
       body: JSON.stringify(draft),
     });
 
-    const payload = (await response.json().catch(() => ({}))) as { error?: string; source?: "firebase" | "local"; updatedAt?: string };
+    const payload = (await response.json().catch(() => ({}))) as { error?: string; source?: "postgres" | "local"; updatedAt?: string };
 
     setSaving(false);
 
@@ -104,7 +105,7 @@ export default function AdminDashboardClient() {
     setError("");
 
     const response = await fetch("/api/admin/publish", { method: "POST" });
-    const payload = (await response.json().catch(() => ({}))) as { error?: string; source?: "firebase" | "local"; publishedAt?: string };
+    const payload = (await response.json().catch(() => ({}))) as { error?: string; source?: "postgres" | "local"; publishedAt?: string };
 
     setPublishing(false);
 
@@ -170,7 +171,7 @@ export default function AdminDashboardClient() {
           <h1>Portfolio Admin</h1>
           <p>Manage draft content, preview updates, and publish when ready.</p>
           <p className="admin-meta">
-            Source: {source} | Firebase configured: {firebaseConfigured ? "yes" : "no"}
+            Source: {source} | Postgres configured: {postgresConfigured ? "yes" : "no"}
           </p>
           <p className="admin-meta">
             Last updated: {updatedAt ?? "n/a"} | Last published: {publishedAt ?? "not yet"}

@@ -7,20 +7,41 @@ import {
   type PortfolioRecord,
 } from "@/config/contentModel";
 import {
-  firebaseAdminInitError,
-  firestoreAdminDb,
-  getFirebaseAdminDebugInfo,
-  hasFirebaseAdminConfig,
-} from "@/firebase/firebaseAdmin";
+  getPostgresDebugInfo,
+  hasPostgresConfig,
+  withPostgresClient,
+  withPostgresTimeout,
+} from "@/db/postgres";
 
-const PORTFOLIO_COLLECTION = "portfolio";
-const PORTFOLIO_DOCUMENT = "content";
-const FIRESTORE_TIMEOUT_MS = 8000;
+const PORTFOLIO_TABLE = "portfolio_content";
+const PORTFOLIO_RECORD_ID = "primary";
 
 declare global {
   // eslint-disable-next-line no-var
   var __portfolioRecordFallback: PortfolioRecord | undefined;
+  // eslint-disable-next-line no-var
+  var __portfolioTableInitPromise: Promise<void> | undefined;
 }
+
+interface PortfolioRow {
+  id: string;
+  draft_json: unknown;
+  published_json: unknown;
+  created_at: Date | string;
+  updated_at: Date | string;
+  published_at: Date | string | null;
+}
+
+const CREATE_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS portfolio_content (
+    id TEXT PRIMARY KEY,
+    draft_json JSONB NOT NULL,
+    published_json JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    published_at TIMESTAMPTZ NULL
+  );
+`;
 
 const getFallbackRecord = (): PortfolioRecord => {
   if (!globalThis.__portfolioRecordFallback) {
@@ -34,25 +55,18 @@ const setFallbackRecord = (record: PortfolioRecord) => {
   globalThis.__portfolioRecordFallback = record;
 };
 
-const getPortfolioDocumentPath = () => `${PORTFOLIO_COLLECTION}/${PORTFOLIO_DOCUMENT}`;
+const getPortfolioTablePath = () => PORTFOLIO_TABLE;
 
-const withTimeout = async <T>(operation: Promise<T>, label: string): Promise<T> => {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-
-  try {
-    return await Promise.race([
-      operation,
-      new Promise<T>((_, reject) => {
-        timer = setTimeout(() => {
-          reject(new Error(`${label} timed out after ${FIRESTORE_TIMEOUT_MS}ms`));
-        }, FIRESTORE_TIMEOUT_MS);
-      }),
-    ]);
-  } finally {
-    if (timer) {
-      clearTimeout(timer);
-    }
+const asIsoString = (value: Date | string | null | undefined, fallback: string | null): string | null => {
+  if (value instanceof Date) {
+    return value.toISOString();
   }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return fallback;
 };
 
 const normalizePortfolioRecord = (input: unknown): PortfolioRecord => {
@@ -63,97 +77,212 @@ const normalizePortfolioRecord = (input: unknown): PortfolioRecord => {
   }
 
   const data = input as Record<string, unknown>;
-  const updatedAt = typeof data.updatedAt === "string" ? data.updatedAt : fallback.updatedAt;
-  const publishedAt =
-    typeof data.publishedAt === "string" || data.publishedAt === null
-      ? data.publishedAt
-      : fallback.publishedAt;
 
   return {
     draft: normalizePortfolioContent(data.draft, fallback.draft),
     published: normalizePortfolioContent(data.published, fallback.published),
-    updatedAt,
-    publishedAt,
+    updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : fallback.updatedAt,
+    publishedAt:
+      typeof data.publishedAt === "string" || data.publishedAt === null
+        ? data.publishedAt
+        : fallback.publishedAt,
   };
 };
 
-const readAdminFirestoreRecord = async (): Promise<PortfolioRecord | null> => {
-  if (firebaseAdminInitError) {
-    throw new Error(`Firebase Admin initialization failed: ${firebaseAdminInitError}`);
-  }
-
-  if (!hasFirebaseAdminConfig || !firestoreAdminDb) {
-    return null;
-  }
-
-  const ref = firestoreAdminDb.collection(PORTFOLIO_COLLECTION).doc(PORTFOLIO_DOCUMENT);
-  console.info("[portfolioRepository] reading Firestore Admin record", {
-    path: getPortfolioDocumentPath(),
-    ...getFirebaseAdminDebugInfo(),
+const mapPortfolioRow = (row: PortfolioRow): PortfolioRecord => {
+  return normalizePortfolioRecord({
+    draft: row.draft_json,
+    published: row.published_json,
+    updatedAt: asIsoString(row.updated_at, createSeededPortfolioRecord().updatedAt),
+    publishedAt: asIsoString(row.published_at, null),
   });
-
-  const snapshot = await withTimeout(
-    ref.get(),
-    `Firestore Admin read for ${getPortfolioDocumentPath()}`
-  );
-
-  if (!snapshot.exists) {
-    console.info("[portfolioRepository] Firestore Admin record missing", {
-      path: getPortfolioDocumentPath(),
-    });
-    return null;
-  }
-
-  return normalizePortfolioRecord(snapshot.data());
 };
 
-const writeAdminFirestoreRecord = async (record: PortfolioRecord): Promise<void> => {
-  if (firebaseAdminInitError) {
-    throw new Error(`Firebase Admin initialization failed: ${firebaseAdminInitError}`);
+const ensurePortfolioTable = async () => {
+  if (globalThis.__portfolioTableInitPromise) {
+    return globalThis.__portfolioTableInitPromise;
   }
 
-  if (!hasFirebaseAdminConfig || !firestoreAdminDb) {
-    return;
+  globalThis.__portfolioTableInitPromise = withPostgresClient(async (client) => {
+    console.info("[portfolioRepository] ensuring PostgreSQL table", {
+      table: getPortfolioTablePath(),
+      ...getPostgresDebugInfo(),
+    });
+
+    await withPostgresTimeout(
+      client.query(CREATE_TABLE_SQL),
+      `Create table ${getPortfolioTablePath()}`
+    );
+  }, "Ensure portfolio table");
+
+  try {
+    await globalThis.__portfolioTableInitPromise;
+  } catch (error) {
+    globalThis.__portfolioTableInitPromise = undefined;
+    throw error;
   }
+};
 
-  const ref = firestoreAdminDb.collection(PORTFOLIO_COLLECTION).doc(PORTFOLIO_DOCUMENT);
-  console.info("[portfolioRepository] writing Firestore Admin record", {
-    path: getPortfolioDocumentPath(),
-    updatedAt: record.updatedAt,
-    publishedAt: record.publishedAt,
-    ...getFirebaseAdminDebugInfo(),
-  });
+const readPostgresRecord = async (): Promise<PortfolioRecord | null> => {
+  await ensurePortfolioTable();
 
-  await withTimeout(
-    ref.set(record),
-    `Firestore Admin write for ${getPortfolioDocumentPath()}`
-  );
+  return withPostgresClient(async (client) => {
+    console.info("[portfolioRepository] reading PostgreSQL record", {
+      table: getPortfolioTablePath(),
+      id: PORTFOLIO_RECORD_ID,
+      ...getPostgresDebugInfo(),
+    });
+
+    const result = await withPostgresTimeout(
+      client.query<PortfolioRow>(
+        `
+          SELECT id, draft_json, published_json, created_at, updated_at, published_at
+          FROM portfolio_content
+          WHERE id = $1
+          LIMIT 1
+        `,
+        [PORTFOLIO_RECORD_ID]
+      ),
+      `Read portfolio record from ${getPortfolioTablePath()}`
+    );
+
+    if (result.rows.length === 0) {
+      console.info("[portfolioRepository] PostgreSQL record missing", {
+        table: getPortfolioTablePath(),
+        id: PORTFOLIO_RECORD_ID,
+      });
+      return null;
+    }
+
+    return mapPortfolioRow(result.rows[0]);
+  }, "Read portfolio record");
+};
+
+const insertSeedRecordIfMissing = async (): Promise<PortfolioRecord> => {
+  await ensurePortfolioTable();
+
+  const seed = createSeededPortfolioRecord();
+
+  return withPostgresClient(async (client) => {
+    console.info("[portfolioRepository] creating seeded PostgreSQL record", {
+      table: getPortfolioTablePath(),
+      id: PORTFOLIO_RECORD_ID,
+    });
+
+    await withPostgresTimeout(
+      client.query(
+        `
+          INSERT INTO portfolio_content (
+            id,
+            draft_json,
+            published_json,
+            updated_at,
+            published_at
+          )
+          VALUES ($1, $2::jsonb, $3::jsonb, $4::timestamptz, $5::timestamptz)
+          ON CONFLICT (id) DO NOTHING
+        `,
+        [
+          PORTFOLIO_RECORD_ID,
+          JSON.stringify(seed.draft),
+          JSON.stringify(seed.published),
+          seed.updatedAt,
+          seed.publishedAt,
+        ]
+      ),
+      `Insert seed portfolio record into ${getPortfolioTablePath()}`
+    );
+
+    const result = await withPostgresTimeout(
+      client.query<PortfolioRow>(
+        `
+          SELECT id, draft_json, published_json, created_at, updated_at, published_at
+          FROM portfolio_content
+          WHERE id = $1
+          LIMIT 1
+        `,
+        [PORTFOLIO_RECORD_ID]
+      ),
+      `Read seeded portfolio record from ${getPortfolioTablePath()}`
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error("Failed to seed PostgreSQL portfolio content record.");
+    }
+
+    return mapPortfolioRow(result.rows[0]);
+  }, "Seed portfolio record");
+};
+
+const writePostgresRecord = async (record: PortfolioRecord): Promise<void> => {
+  await ensurePortfolioTable();
+
+  await withPostgresClient(async (client) => {
+    console.info("[portfolioRepository] writing PostgreSQL record", {
+      table: getPortfolioTablePath(),
+      id: PORTFOLIO_RECORD_ID,
+      updatedAt: record.updatedAt,
+      publishedAt: record.publishedAt,
+      ...getPostgresDebugInfo(),
+    });
+
+    await withPostgresTimeout(
+      client.query(
+        `
+          INSERT INTO portfolio_content (
+            id,
+            draft_json,
+            published_json,
+            updated_at,
+            published_at
+          )
+          VALUES ($1, $2::jsonb, $3::jsonb, $4::timestamptz, $5::timestamptz)
+          ON CONFLICT (id)
+          DO UPDATE SET
+            draft_json = EXCLUDED.draft_json,
+            published_json = EXCLUDED.published_json,
+            updated_at = EXCLUDED.updated_at,
+            published_at = EXCLUDED.published_at
+        `,
+        [
+          PORTFOLIO_RECORD_ID,
+          JSON.stringify(record.draft),
+          JSON.stringify(record.published),
+          record.updatedAt,
+          record.publishedAt,
+        ]
+      ),
+      `Write portfolio record to ${getPortfolioTablePath()}`
+    );
+  }, "Write portfolio record");
 };
 
 const getRecord = async (mode: "strict" | "fallback"): Promise<{
   record: PortfolioRecord;
-  source: "firebase" | "local";
+  source: "postgres" | "local";
 }> => {
-  if (hasFirebaseAdminConfig && firestoreAdminDb) {
+  if (hasPostgresConfig) {
     try {
-      const firebaseRecord = await readAdminFirestoreRecord();
+      const postgresRecord = await readPostgresRecord();
 
-      if (firebaseRecord) {
-        return { record: firebaseRecord, source: "firebase" };
+      if (postgresRecord) {
+        return { record: postgresRecord, source: "postgres" };
       }
 
-      const initialRecord = createSeededPortfolioRecord();
-      await writeAdminFirestoreRecord(initialRecord);
-      return { record: initialRecord, source: "firebase" };
+      const seededRecord = await insertSeedRecordIfMissing();
+      return { record: seededRecord, source: "postgres" };
     } catch (error) {
-      console.error("[portfolioRepository] Firestore Admin read failed", {
-        path: getPortfolioDocumentPath(),
-        error: error instanceof Error ? error.message : "Unknown error",
-        ...getFirebaseAdminDebugInfo(),
+      const message = error instanceof Error ? error.message : "Unknown PostgreSQL error";
+
+      console.error("[portfolioRepository] PostgreSQL read failed", {
+        table: getPortfolioTablePath(),
+        id: PORTFOLIO_RECORD_ID,
+        error: message,
+        ...getPostgresDebugInfo(),
       });
 
       if (mode === "strict") {
-        throw error;
+        throw new Error(message);
       }
     }
   }
@@ -164,20 +293,23 @@ const getRecord = async (mode: "strict" | "fallback"): Promise<{
 const persistRecord = async (
   record: PortfolioRecord,
   mode: "strict" | "fallback"
-): Promise<"firebase" | "local"> => {
-  if (hasFirebaseAdminConfig && firestoreAdminDb) {
+): Promise<"postgres" | "local"> => {
+  if (hasPostgresConfig) {
     try {
-      await writeAdminFirestoreRecord(record);
-      return "firebase";
+      await writePostgresRecord(record);
+      return "postgres";
     } catch (error) {
-      console.error("[portfolioRepository] Firestore Admin write failed", {
-        path: getPortfolioDocumentPath(),
-        error: error instanceof Error ? error.message : "Unknown error",
-        ...getFirebaseAdminDebugInfo(),
+      const message = error instanceof Error ? error.message : "Unknown PostgreSQL error";
+
+      console.error("[portfolioRepository] PostgreSQL write failed", {
+        table: getPortfolioTablePath(),
+        id: PORTFOLIO_RECORD_ID,
+        error: message,
+        ...getPostgresDebugInfo(),
       });
 
       if (mode === "strict") {
-        throw error;
+        throw new Error(message);
       }
     }
   }
@@ -189,13 +321,13 @@ const persistRecord = async (
 export interface PortfolioPublicResult {
   content: PortfolioContent;
   mode: "published" | "preview";
-  source: "firebase" | "local";
+  source: "postgres" | "local";
 }
 
 export interface PortfolioAdminResult {
   record: PortfolioRecord;
-  source: "firebase" | "local";
-  firebaseConfigured: boolean;
+  source: "postgres" | "local";
+  postgresConfigured: boolean;
 }
 
 export const getPublicPortfolioData = async (isPreview: boolean): Promise<PortfolioPublicResult> => {
@@ -214,18 +346,20 @@ export const getAdminPortfolioData = async (): Promise<PortfolioAdminResult> => 
   return {
     record,
     source,
-    firebaseConfigured: hasFirebaseAdminConfig,
+    postgresConfigured: hasPostgresConfig,
   };
 };
 
 export const saveDraftPortfolioData = async (
   input: unknown
-): Promise<{ source: "firebase" | "local"; record: PortfolioRecord }> => {
+): Promise<{ source: "postgres" | "local"; record: PortfolioRecord }> => {
   console.info("[portfolioRepository] saveDraftPortfolioData start", {
-    firebaseConfigured: hasFirebaseAdminConfig,
-    path: getPortfolioDocumentPath(),
-    ...getFirebaseAdminDebugInfo(),
+    postgresConfigured: hasPostgresConfig,
+    table: getPortfolioTablePath(),
+    id: PORTFOLIO_RECORD_ID,
+    ...getPostgresDebugInfo(),
   });
+
   const { record } = await getRecord("strict");
 
   const nextRecord: PortfolioRecord = {
@@ -237,21 +371,24 @@ export const saveDraftPortfolioData = async (
   const source = await persistRecord(nextRecord, "strict");
   console.info("[portfolioRepository] saveDraftPortfolioData complete", {
     source,
-    path: getPortfolioDocumentPath(),
+    table: getPortfolioTablePath(),
+    id: PORTFOLIO_RECORD_ID,
     updatedAt: nextRecord.updatedAt,
   });
   return { source, record: nextRecord };
 };
 
 export const publishPortfolioData = async (): Promise<{
-  source: "firebase" | "local";
+  source: "postgres" | "local";
   record: PortfolioRecord;
 }> => {
   console.info("[portfolioRepository] publishPortfolioData start", {
-    firebaseConfigured: hasFirebaseAdminConfig,
-    path: getPortfolioDocumentPath(),
-    ...getFirebaseAdminDebugInfo(),
+    postgresConfigured: hasPostgresConfig,
+    table: getPortfolioTablePath(),
+    id: PORTFOLIO_RECORD_ID,
+    ...getPostgresDebugInfo(),
   });
+
   const { record } = await getRecord("strict");
   const now = new Date().toISOString();
 
@@ -265,7 +402,8 @@ export const publishPortfolioData = async (): Promise<{
   const source = await persistRecord(nextRecord, "strict");
   console.info("[portfolioRepository] publishPortfolioData complete", {
     source,
-    path: getPortfolioDocumentPath(),
+    table: getPortfolioTablePath(),
+    id: PORTFOLIO_RECORD_ID,
     publishedAt: nextRecord.publishedAt,
   });
   return { source, record: nextRecord };

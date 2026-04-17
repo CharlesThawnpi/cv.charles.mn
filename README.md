@@ -1,6 +1,6 @@
 # Charles Portfolio Platform
 
-Next.js App Router portfolio with draft/publish workflow, protected admin editor, preview mode, and printable CV.
+Next.js App Router portfolio with draft/publish workflow, protected admin editor, preview mode, printable CV, and PostgreSQL-backed content persistence for Vercel.
 
 ## Local Development
 
@@ -12,11 +12,15 @@ Next.js App Router portfolio with draft/publish workflow, protected admin editor
    ```bash
    copy .env.example .env
    ```
-3. Start the app:
+3. Run the PostgreSQL migration:
+   ```bash
+   npm run db:migrate
+   ```
+4. Start the app:
    ```bash
    npm run dev
    ```
-4. Verify the production build:
+5. Verify the production build:
    ```bash
    npm run build
    ```
@@ -25,7 +29,7 @@ Next.js App Router portfolio with draft/publish workflow, protected admin editor
 
 This project is prepared for standard Vercel deployment using the default Next.js build pipeline.
 
-No Cloudflare Workers, OpenNext, Wrangler, or custom deployment wrapper is required.
+No Cloudflare Workers, OpenNext, Wrangler, or Firebase persistence layer is required for the active production path.
 
 ## GitHub Workflow
 
@@ -45,7 +49,27 @@ No Cloudflare Workers, OpenNext, Wrangler, or custom deployment wrapper is requi
 - `ADMIN_PASSWORD`
 - `ADMIN_SESSION_SECRET`
 
-### Optional for Firebase persistence
+### Required for PostgreSQL persistence
+
+- `DATABASE_URL` for local development or non-Vercel environments
+
+### Vercel Postgres-provided environment variables
+
+When you connect Vercel Postgres, Vercel will typically provide:
+
+- `POSTGRES_URL`
+- `POSTGRES_URL_NON_POOLING`
+- `POSTGRES_PRISMA_URL`
+- `POSTGRES_USER`
+- `POSTGRES_HOST`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_DATABASE`
+
+The app uses `DATABASE_URL` first, then falls back to `POSTGRES_URL` / `POSTGRES_PRISMA_URL`.
+
+### Deprecated Firebase variables
+
+These are no longer used for active persistence:
 
 - `NEXT_PUBLIC_FIREBASE_API_KEY`
 - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
@@ -57,9 +81,28 @@ No Cloudflare Workers, OpenNext, Wrangler, or custom deployment wrapper is requi
 - `FIREBASE_ADMIN_CLIENT_EMAIL`
 - `FIREBASE_ADMIN_PRIVATE_KEY`
 
-For durable admin save/publish persistence on Vercel, set the `FIREBASE_ADMIN_*` variables from a Firebase service account.
+## Database Bootstrap
 
-If the Firebase Admin variables are omitted, admin persistence falls back to the local seeded/in-memory content flow.
+The durable content table is:
+
+- `portfolio_content`
+
+It stores one canonical row with:
+
+- `id`
+- `draft_json`
+- `published_json`
+- `created_at`
+- `updated_at`
+- `published_at`
+
+Migration command:
+
+```bash
+npm run db:migrate
+```
+
+Initial content is auto-seeded on first read if no `portfolio_content` row exists yet.
 
 ## Vercel Setup
 
@@ -70,13 +113,12 @@ Use the default Next.js project settings in Vercel:
 - Install command: `npm install`
 - Output setting: leave default
 
-Add the required environment variables in the Vercel project settings before deploying production.
+Then:
 
-For Firebase Admin on Vercel:
-
-- `FIREBASE_ADMIN_PROJECT_ID`: your Firebase project ID
-- `FIREBASE_ADMIN_CLIENT_EMAIL`: service account client email
-- `FIREBASE_ADMIN_PRIVATE_KEY`: full private key string with `\n` line breaks preserved
+1. Connect a Vercel Postgres database to the project.
+2. Ensure the project has Postgres environment variables available.
+3. Run the SQL migration using `npm run db:migrate` against the same database.
+4. Redeploy.
 
 ## Important Routes
 
