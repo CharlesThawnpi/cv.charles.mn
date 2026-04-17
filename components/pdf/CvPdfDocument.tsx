@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from "@react-pdf/renderer";
+import type { ReactNode } from "react";
 import type { PortfolioContent } from "@/config/contentModel";
 import { getPdfSocialLinks } from "@/components/portfolio/SocialLinks";
 
@@ -162,24 +163,16 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     border: "1 solid #d5dbe3",
     backgroundColor: "#ffffff",
-    padding: 9,
-    gap: 4,
+    padding: 8,
+    gap: 3,
   },
   sectionText: {
     color: "#374151",
-    lineHeight: 1.24,
+    lineHeight: 1.16,
+    fontSize: 9.2,
   },
   stack: {
-    gap: 8,
-  },
-  rowGrid: {
-    display: "flex",
-    flexDirection: "row",
-    gap: 10,
-  },
-  half: {
-    flex: 1,
-    gap: 6,
+    gap: 7,
   },
   itemHeading: {
     display: "flex",
@@ -191,28 +184,29 @@ const styles = StyleSheet.create({
     color: "#111827",
     fontWeight: 700,
     lineHeight: 1.18,
+    fontSize: 9.5,
   },
   itemMeta: {
     color: "#52677e",
-    fontSize: 8.6,
+    fontSize: 8.3,
   },
   chips: {
     display: "flex",
     flexDirection: "row",
-    gap: 5,
+    gap: 4,
     flexWrap: "wrap",
   },
   chip: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    paddingVertical: 3,
+    paddingHorizontal: 7,
     borderRadius: 999,
     border: "1 solid #d5dbe3",
     backgroundColor: "#f7f9fb",
     color: "#1f2933",
-    fontSize: 8.4,
+    fontSize: 8,
   },
   list: {
-    gap: 6,
+    gap: 5,
   },
   listItem: {
     gap: 2,
@@ -259,6 +253,7 @@ const styles = StyleSheet.create({
 interface CvPdfDocumentProps {
   content: PortfolioContent;
   portfolioUrl: string;
+  displayPortfolioUrl: string;
   qrCodeDataUrl: string;
 }
 
@@ -279,15 +274,44 @@ const getAdaptiveSummarySize = (value: string) => {
   return 9.4;
 };
 
+const getAdaptiveSupportSize = (value: string) => {
+  if (value.length > 100) return 8.4;
+  if (value.length > 68) return 8.8;
+  return 9.1;
+};
+
+const getAdaptiveParagraphSize = (value: string) => {
+  if (value.length > 220) return 8.8;
+  if (value.length > 160) return 9;
+  return 9.2;
+};
+
+interface SectionBlockProps {
+  heading: string;
+  children: ReactNode;
+  minPresenceAhead?: number;
+}
+
+function SectionBlock({ heading, children, minPresenceAhead = 90 }: SectionBlockProps) {
+  return (
+    <View style={styles.section} minPresenceAhead={minPresenceAhead}>
+      <Text style={styles.sectionHeading}>{heading}</Text>
+      {children}
+    </View>
+  );
+}
+
 export function CvPdfDocument({
   content,
   portfolioUrl,
+  displayPortfolioUrl,
   qrCodeDataUrl,
 }: CvPdfDocumentProps) {
   const socialLinks = getPdfSocialLinks(content.contact);
   const nameFontSize = getAdaptiveNameSize(content.profile.name);
   const headlineFontSize = getAdaptiveHeadlineSize(content.hero.headline);
   const summaryFontSize = getAdaptiveSummarySize(content.hero.summary);
+  const supportHighlights = content.hero.highlights.slice(0, 3);
 
   return (
     <Document title={`${content.profile.name} CV`}>
@@ -324,24 +348,26 @@ export function CvPdfDocument({
           <View style={styles.support} wrap={false}>
             <Text style={[styles.supportSummary, { fontSize: summaryFontSize }]}>{content.hero.summary}</Text>
             <View style={styles.supportGrid}>
-              {content.hero.highlights.map((item, index) => (
+              {supportHighlights.map((item, index) => (
                 <View key={`${item.label}-${index}`} style={styles.supportCard}>
                   <Text style={styles.supportLabel}>{item.label}</Text>
-                  <Text style={styles.supportValue}>{item.value}</Text>
+                  <Text style={[styles.supportValue, { fontSize: getAdaptiveSupportSize(item.value) }]}>
+                    {item.value}
+                  </Text>
                 </View>
               ))}
             </View>
           </View>
 
-          <View style={styles.section} wrap={false}>
-            <Text style={styles.sectionHeading}>{content.cv.summaryHeading}</Text>
+          <SectionBlock heading={content.cv.summaryHeading} minPresenceAhead={80}>
             <View style={styles.panel}>
-              <Text style={styles.sectionText}>{content.about.description}</Text>
+              <Text style={[styles.sectionText, { fontSize: getAdaptiveParagraphSize(content.about.description) }]}>
+                {content.about.description}
+              </Text>
             </View>
-          </View>
+          </SectionBlock>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionHeading}>{content.cv.experienceHeading}</Text>
+          <SectionBlock heading={content.cv.experienceHeading} minPresenceAhead={120}>
             <View style={styles.stack}>
               {content.experience.map((item, index) => (
                 <View key={`${item.company}-${index}`} style={styles.panel} wrap={false}>
@@ -350,80 +376,73 @@ export function CvPdfDocument({
                     <Text style={styles.itemMeta}>{item.duration}</Text>
                   </View>
                   <Text style={styles.smallMuted}>{item.company}</Text>
-                  <Text style={styles.sectionText}>{item.details}</Text>
+                  <Text style={[styles.sectionText, { fontSize: getAdaptiveParagraphSize(item.details) }]}>
+                    {item.details}
+                  </Text>
                 </View>
               ))}
             </View>
-          </View>
+          </SectionBlock>
 
-          <View style={styles.rowGrid}>
-            <View style={styles.half}>
-              <View style={styles.section} wrap={false}>
-                <Text style={styles.sectionHeading}>{content.cv.skillsHeading}</Text>
-                <View style={styles.panel}>
-                  <View style={styles.chips}>
-                    {content.skills.map((skill) => (
-                      <Text key={skill} style={styles.chip}>
-                        {skill}
-                      </Text>
-                    ))}
-                  </View>
-                </View>
-              </View>
-
-              <View style={styles.section} wrap={false}>
-                <Text style={styles.sectionHeading}>{content.cv.certificationsHeading}</Text>
-                <View style={styles.panel}>
-                  <View style={styles.list}>
-                    {content.certifications.map((item, index) => (
-                      <View key={`${item.name}-${index}`} style={styles.listItem}>
-                        <Text style={styles.itemTitle}>{item.name}</Text>
-                        <Text style={styles.smallMuted}>
-                          {item.issuer} - {item.date}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
+          <SectionBlock heading={content.cv.skillsHeading} minPresenceAhead={95}>
+            <View style={styles.panel} wrap={false}>
+              <View style={styles.chips}>
+                {content.skills.map((skill) => (
+                  <Text key={skill} style={styles.chip}>
+                    {skill}
+                  </Text>
+                ))}
               </View>
             </View>
+          </SectionBlock>
 
-            <View style={styles.half}>
-              <View style={styles.section} wrap={false}>
-                <Text style={styles.sectionHeading}>{content.cv.toolsHeading}</Text>
-                <View style={styles.panel}>
-                  <View style={styles.chips}>
-                    {content.tools.map((tool) => (
-                      <Text key={tool} style={styles.chip}>
-                        {tool}
-                      </Text>
-                    ))}
+          <SectionBlock heading={content.cv.certificationsHeading} minPresenceAhead={110}>
+            <View style={styles.panel}>
+              <View style={styles.list}>
+                {content.certifications.map((item, index) => (
+                  <View key={`${item.name}-${index}`} style={styles.listItem} wrap={false}>
+                    <Text style={styles.itemTitle}>{item.name}</Text>
+                    <Text style={styles.smallMuted}>
+                      {item.issuer} - {item.date}
+                    </Text>
                   </View>
-                </View>
-              </View>
-
-              <View style={styles.section} wrap={false}>
-                <Text style={styles.sectionHeading}>{content.cv.achievementsHeading}</Text>
-                <View style={styles.panel}>
-                  <View style={styles.list}>
-                    {content.achievements.map((achievement) => (
-                      <Text key={achievement} style={styles.sectionText}>
-                        • {achievement}
-                      </Text>
-                    ))}
-                  </View>
-                </View>
+                ))}
               </View>
             </View>
-          </View>
+          </SectionBlock>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionHeading}>{content.cv.projectsHeading}</Text>
+          <SectionBlock heading={content.cv.toolsHeading} minPresenceAhead={95}>
+            <View style={styles.panel} wrap={false}>
+              <View style={styles.chips}>
+                {content.tools.map((tool) => (
+                  <Text key={tool} style={styles.chip}>
+                    {tool}
+                  </Text>
+                ))}
+              </View>
+            </View>
+          </SectionBlock>
+
+          <SectionBlock heading={content.cv.achievementsHeading} minPresenceAhead={105}>
+            <View style={styles.panel}>
+              <View style={styles.list}>
+                {content.achievements.map((achievement) => (
+                  <Text key={achievement} style={styles.sectionText}>
+                    • {achievement}
+                  </Text>
+                ))}
+              </View>
+            </View>
+          </SectionBlock>
+
+          <SectionBlock heading={content.cv.projectsHeading} minPresenceAhead={120}>
             <View style={styles.stack}>
               {content.projects.map((project, index) => (
                 <View key={`${project.name}-${index}`} style={styles.panel} wrap={false}>
                   <Text style={styles.itemTitle}>{project.name}</Text>
-                  <Text style={styles.sectionText}>{project.description}</Text>
+                  <Text style={[styles.sectionText, { fontSize: getAdaptiveParagraphSize(project.description) }]}>
+                    {project.description}
+                  </Text>
                   {project.link ? (
                     <Link src={project.link} style={styles.socialLink}>
                       {project.link}
@@ -432,11 +451,11 @@ export function CvPdfDocument({
                 </View>
               ))}
             </View>
-          </View>
+          </SectionBlock>
 
-          <View style={styles.footerRow} wrap={false}>
-            <View style={[styles.section, { flex: 1, marginTop: 0 }]} wrap={false}>
-              <Text style={styles.sectionHeading}>{content.cv.contactHeading}</Text>
+          <View style={styles.footerRow} wrap={false} minPresenceAhead={120}>
+            <View style={{ flex: 1 }}>
+              <SectionBlock heading={content.cv.contactHeading} minPresenceAhead={80}>
               <View style={styles.panel}>
                 <View style={styles.list}>
                   {content.contact.email ? (
@@ -459,14 +478,17 @@ export function CvPdfDocument({
                   ) : null}
                 </View>
               </View>
+              </SectionBlock>
             </View>
 
             <View style={styles.qrPanel} wrap={false}>
               <Image src={qrCodeDataUrl} style={styles.qrCode} />
               <Text style={styles.qrCaption}>{content.cv.qrCaption}</Text>
-              <Link src={portfolioUrl} style={styles.socialLink}>
-                {portfolioUrl}
-              </Link>
+              {displayPortfolioUrl ? (
+                <Link src={portfolioUrl} style={styles.socialLink}>
+                  {displayPortfolioUrl}
+                </Link>
+              ) : null}
             </View>
           </View>
         </View>

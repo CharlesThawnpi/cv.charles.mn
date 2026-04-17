@@ -22,6 +22,7 @@ export async function GET() {
       content.cv.portfolioUrl?.trim() ||
       process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
       FALLBACK_PORTFOLIO_URL;
+    const displayPortfolioUrl = content.cv.portfolioUrl?.trim() || "";
 
     const qrCodeDataUrl = await QRCode.toDataURL(portfolioUrl, {
       margin: 1,
@@ -36,6 +37,7 @@ export async function GET() {
       <CvPdfDocument
         content={content}
         portfolioUrl={portfolioUrl}
+        displayPortfolioUrl={displayPortfolioUrl}
         qrCodeDataUrl={qrCodeDataUrl}
       />
     );
