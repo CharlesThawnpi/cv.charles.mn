@@ -1,5 +1,6 @@
-import Link from "next/link";
+import type { CSSProperties, SVGProps } from "react";
 import type { PortfolioContent } from "@/config/contentModel";
+import { SocialLinks } from "@/components/portfolio/SocialLinks";
 
 interface PortfolioHomeProps {
   content: PortfolioContent;
@@ -7,58 +8,96 @@ interface PortfolioHomeProps {
   mode: "published" | "preview";
 }
 
-export function PortfolioHome({ content, source, mode }: PortfolioHomeProps) {
+function BriefcaseIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+      <path d="M9 7V6a3 3 0 0 1 3-3h0a3 3 0 0 1 3 3v1" />
+      <path d="M4 8h16v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z" />
+      <path d="M4 12h16" />
+    </svg>
+  );
+}
+
+function PinIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+      <path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Z" />
+      <circle cx="12" cy="10" r="2.2" />
+    </svg>
+  );
+}
+
+function DownloadIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+      <path d="M12 4v10" />
+      <path d="m8 10 4 4 4-4" />
+      <path d="M5 19h14" />
+    </svg>
+  );
+}
+
+export function PortfolioHome({ content }: PortfolioHomeProps) {
+  const heroStyle = {
+    "--hero-name-size": content.hero.nameFontSize,
+    "--hero-headline-size": content.hero.headlineFontSize,
+  } as CSSProperties;
+
+  const heroPhoto = content.profile.photo?.trim();
+
   return (
     <main className="portfolio-shell">
       <div className="grain-layer" aria-hidden="true" />
       <div className="aurora-layer" aria-hidden="true" />
 
-      <header className="hero-wrap">
-        <div className="hero-copy">
-          <div className="hero-topbar">
-            <span className="status-pill">{mode === "preview" ? "Previewing Draft" : "Published"}</span>
-            <span className="status-pill">Data source: {source}</span>
+      <header className="hero-wrap" style={heroStyle}>
+        <div className="hero-stage">
+          <div className="hero-copy">
+            <p className="hero-kicker">{content.profile.title}</p>
+            <h1 className="hero-name">{content.profile.name}</h1>
+
+            <div className="hero-meta">
+              <strong>
+                <BriefcaseIcon className="meta-icon" />
+                {content.profile.title}
+              </strong>
+              <span>
+                <PinIcon className="meta-icon" />
+                {content.profile.location}
+              </span>
+            </div>
+
+            <h2 className="hero-headline">{content.hero.headline}</h2>
+            <p className="hero-description">{content.hero.subtext}</p>
           </div>
 
-          <p className="hero-kicker">{content.profile.name}</p>
-          <h1>{content.hero.headline}</h1>
-          <p className="hero-description">{content.hero.subtext}</p>
-
-          <div className="hero-actions">
-            <Link className="hero-primary-link" href="/cv">
-              Open Printable CV
-            </Link>
-            <a className="hero-secondary-link" href={`mailto:${content.contact.email}`}>
-              Contact Charles
+          <aside className="hero-rail">
+            <a className="hero-download-link" href="/api/cv/download">
+              <DownloadIcon className="button-icon" />
+              {content.hero.downloadLabel}
             </a>
-          </div>
 
-          <div className="hero-meta">
-            <strong>{content.profile.title}</strong>
-            <span>{content.profile.location}</span>
-            <span>{content.skills[0] ?? "ICT Leadership"}</span>
-          </div>
+            <div className="hero-photo-shell">
+              {heroPhoto ? (
+                <img className="hero-photo" src={heroPhoto} alt={`${content.profile.name} profile`} />
+              ) : (
+                <div className="hero-photo-placeholder" aria-label="Profile picture placeholder">
+                  <span>{content.profile.name.slice(0, 1)}</span>
+                </div>
+              )}
+            </div>
+          </aside>
         </div>
 
         <div className="hero-support">
-          <p className="hero-support-intro">
-            Quietly reliable ICT leadership grounded in infrastructure continuity, practical support, and
-            mission-aligned execution.
-          </p>
-
+          <p className="hero-support-intro">{content.hero.summary}</p>
           <dl className="hero-support-list">
-            <div>
-              <dt>Experience</dt>
-              <dd>{content.experience.length} roles across KMSS National Office</dd>
-            </div>
-            <div>
-              <dt>Core strengths</dt>
-              <dd>Infrastructure, support systems, Microsoft 365, and resilient daily operations</dd>
-            </div>
-            <div>
-              <dt>Selected work</dt>
-              <dd>{content.projects.length} portfolio-backed initiatives and operational improvements</dd>
-            </div>
+            {content.hero.highlights.map((item, index) => (
+              <div key={`${item.label}-${index}`}>
+                <dt>{item.label}</dt>
+                <dd>{item.value}</dd>
+              </div>
+            ))}
           </dl>
         </div>
       </header>
@@ -66,16 +105,16 @@ export function PortfolioHome({ content, source, mode }: PortfolioHomeProps) {
       <section className="section-shell section-grid two-col">
         <article className="glass-panel feature-panel">
           <div className="section-heading">
-            <span>About</span>
-            <h2>Practical technology leadership with a service-first mindset</h2>
+            <span>{content.about.eyebrow}</span>
+            <h2>{content.about.heading}</h2>
           </div>
           <p className="section-copy">{content.about.description}</p>
         </article>
 
         <article className="glass-panel feature-panel compact-panel">
           <div className="section-heading">
-            <span>Current Focus</span>
-            <h2>Keeping teams productive and infrastructure dependable</h2>
+            <span>{content.focus.eyebrow}</span>
+            <h2>{content.focus.heading}</h2>
           </div>
           <ul className="impact-list">
             {content.achievements.slice(0, 3).map((achievement) => (
@@ -88,8 +127,8 @@ export function PortfolioHome({ content, source, mode }: PortfolioHomeProps) {
       <section className="section-shell">
         <div className="section-heading section-heading-inline">
           <div>
-            <span>Experience</span>
-            <h2>Career timeline built around continuity, support, and infrastructure trust</h2>
+            <span>{content.experienceSection.eyebrow}</span>
+            <h2>{content.experienceSection.heading}</h2>
           </div>
         </div>
         <ol className="timeline-list premium-timeline">
@@ -111,8 +150,8 @@ export function PortfolioHome({ content, source, mode }: PortfolioHomeProps) {
       <section className="section-shell section-grid two-col">
         <article className="glass-panel surface-card skill-card">
           <div className="section-heading">
-            <span>Capabilities</span>
-            <h2>Skills</h2>
+            <span>{content.skillsSection.eyebrow}</span>
+            <h2>{content.skillsSection.heading}</h2>
           </div>
           <ul className="chip-list">
             {content.skills.map((skill) => (
@@ -123,8 +162,8 @@ export function PortfolioHome({ content, source, mode }: PortfolioHomeProps) {
 
         <article className="glass-panel surface-card skill-card">
           <div className="section-heading">
-            <span>Tooling</span>
-            <h2>Platforms & Systems</h2>
+            <span>{content.toolsSection.eyebrow}</span>
+            <h2>{content.toolsSection.heading}</h2>
           </div>
           <ul className="chip-list chip-list-soft">
             {content.tools.map((tool) => (
@@ -137,8 +176,8 @@ export function PortfolioHome({ content, source, mode }: PortfolioHomeProps) {
       <section className="section-shell section-grid two-col">
         <article className="glass-panel surface-card">
           <div className="section-heading">
-            <span>Learning & Credentials</span>
-            <h2>Certifications</h2>
+            <span>{content.certificationsSection.eyebrow}</span>
+            <h2>{content.certificationsSection.heading}</h2>
           </div>
           <ul className="detail-list certification-list">
             {content.certifications.map((certification, index) => (
@@ -153,8 +192,8 @@ export function PortfolioHome({ content, source, mode }: PortfolioHomeProps) {
 
         <article className="glass-panel surface-card">
           <div className="section-heading">
-            <span>Impact</span>
-            <h2>Achievements</h2>
+            <span>{content.achievementsSection.eyebrow}</span>
+            <h2>{content.achievementsSection.heading}</h2>
           </div>
           <ul className="impact-list">
             {content.achievements.map((achievement) => (
@@ -167,15 +206,15 @@ export function PortfolioHome({ content, source, mode }: PortfolioHomeProps) {
       <section className="section-shell">
         <div className="section-heading section-heading-inline">
           <div>
-            <span>Selected Work</span>
-            <h2>Projects and operational improvements with visible day-to-day impact</h2>
+            <span>{content.projectsSection.eyebrow}</span>
+            <h2>{content.projectsSection.heading}</h2>
           </div>
         </div>
         <div className="projects-grid premium-projects">
           {content.projects.map((project, index) => (
             <article key={`${project.name}-${index}`} className="project-card glass-panel">
               <div className="project-card-top">
-                <span className="card-label">Key Work</span>
+                <span className="card-label">{content.projectsSection.cardLabel}</span>
                 <h3>{project.name}</h3>
               </div>
               <p>{project.description}</p>
@@ -184,7 +223,7 @@ export function PortfolioHome({ content, source, mode }: PortfolioHomeProps) {
                   View reference
                 </a>
               ) : (
-                <span className="project-muted">Internal delivery / operational project</span>
+                <span className="project-muted">{content.projectsSection.emptyLinkLabel}</span>
               )}
             </article>
           ))}
@@ -194,8 +233,8 @@ export function PortfolioHome({ content, source, mode }: PortfolioHomeProps) {
       <section className="section-shell">
         <article className="glass-panel contact-spotlight">
           <div className="section-heading">
-            <span>Contact</span>
-            <h2>Open to practical conversations around infrastructure, systems, and support leadership</h2>
+            <span>{content.contactSection.eyebrow}</span>
+            <h2>{content.contactSection.heading}</h2>
           </div>
           <div className="contact-grid">
             <p>
@@ -216,14 +255,6 @@ export function PortfolioHome({ content, source, mode }: PortfolioHomeProps) {
                 </a>
               </p>
             )}
-            {content.contact.github && (
-              <p>
-                <span>GitHub</span>
-                <a href={content.contact.github} target="_blank" rel="noreferrer">
-                  {content.contact.github}
-                </a>
-              </p>
-            )}
             {content.contact.website && (
               <p>
                 <span>Website</span>
@@ -233,6 +264,7 @@ export function PortfolioHome({ content, source, mode }: PortfolioHomeProps) {
               </p>
             )}
           </div>
+          <SocialLinks contact={content.contact} className="social-links social-links-panel" />
         </article>
       </section>
 

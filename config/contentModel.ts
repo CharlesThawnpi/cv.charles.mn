@@ -1,4 +1,4 @@
-﻿export interface ExperienceItem {
+export interface ExperienceItem {
   company: string;
   role: string;
   duration: string;
@@ -17,20 +17,69 @@ export interface ProjectItem {
   link: string;
 }
 
+export interface HeroHighlightItem {
+  label: string;
+  value: string;
+}
+
+export interface SectionContent {
+  eyebrow: string;
+  heading: string;
+}
+
+export interface ProjectSectionContent extends SectionContent {
+  cardLabel: string;
+  emptyLinkLabel: string;
+}
+
+export interface CvContentCopy {
+  documentLabel: string;
+  backToPortfolioLabel: string;
+  downloadLabel: string;
+  printableStatusLabel: string;
+  previewStatusLabel: string;
+  printHint: string;
+  summaryHeading: string;
+  experienceHeading: string;
+  skillsHeading: string;
+  toolsHeading: string;
+  certificationsHeading: string;
+  achievementsHeading: string;
+  projectsHeading: string;
+  contactHeading: string;
+  qrCaption: string;
+}
+
 export interface PortfolioContent {
   profile: {
     name: string;
     title: string;
     bio: string;
     location: string;
+    photo: string;
   };
   hero: {
     headline: string;
     subtext: string;
+    downloadLabel: string;
+    summary: string;
+    nameFontSize: string;
+    headlineFontSize: string;
+    highlights: HeroHighlightItem[];
   };
   about: {
+    eyebrow: string;
+    heading: string;
     description: string;
   };
+  focus: SectionContent;
+  experienceSection: SectionContent;
+  skillsSection: SectionContent;
+  toolsSection: SectionContent;
+  certificationsSection: SectionContent;
+  achievementsSection: SectionContent;
+  projectsSection: ProjectSectionContent;
+  contactSection: SectionContent;
   experience: ExperienceItem[];
   certifications: CertificationItem[];
   skills: string[];
@@ -43,7 +92,13 @@ export interface PortfolioContent {
     linkedin: string;
     github: string;
     website: string;
+    facebook: string;
+    x: string;
+    instagram: string;
+    threads: string;
+    telegram: string;
   };
+  cv: CvContentCopy;
   seo: {
     title: string;
     description: string;
@@ -74,11 +129,18 @@ const asStringArray = (value: unknown, fallback: string[]): string[] => {
     return fallback;
   }
 
-  const normalized = value.filter((item): item is string => typeof item === "string").map((item) => item.trim()).filter(Boolean);
+  const normalized = value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
   return normalized.length > 0 ? normalized : fallback;
 };
 
-const normalizeExperience = (value: unknown, fallback: ExperienceItem[]): ExperienceItem[] => {
+const normalizeExperience = (
+  value: unknown,
+  fallback: ExperienceItem[]
+): ExperienceItem[] => {
   if (!Array.isArray(value)) {
     return fallback;
   }
@@ -120,7 +182,10 @@ const normalizeCertifications = (
   return normalized.length > 0 ? normalized : fallback;
 };
 
-const normalizeProjects = (value: unknown, fallback: ProjectItem[]): ProjectItem[] => {
+const normalizeProjects = (
+  value: unknown,
+  fallback: ProjectItem[]
+): ProjectItem[] => {
   if (!Array.isArray(value)) {
     return fallback;
   }
@@ -139,21 +204,149 @@ const normalizeProjects = (value: unknown, fallback: ProjectItem[]): ProjectItem
   return normalized.length > 0 ? normalized : fallback;
 };
 
+const normalizeHeroHighlights = (
+  value: unknown,
+  fallback: HeroHighlightItem[]
+): HeroHighlightItem[] => {
+  if (!Array.isArray(value)) {
+    return fallback;
+  }
+
+  const normalized = value
+    .map((item) => {
+      const record = asRecord(item);
+      return {
+        label: asString(record.label),
+        value: asString(record.value),
+      };
+    })
+    .filter((item) => item.label || item.value);
+
+  return normalized.length > 0 ? normalized : fallback;
+};
+
+const normalizeSectionContent = (
+  value: unknown,
+  fallback: SectionContent
+): SectionContent => {
+  const record = asRecord(value);
+
+  return {
+    eyebrow: asString(record.eyebrow, fallback.eyebrow),
+    heading: asString(record.heading, fallback.heading),
+  };
+};
+
+const normalizeProjectSectionContent = (
+  value: unknown,
+  fallback: ProjectSectionContent
+): ProjectSectionContent => {
+  const record = asRecord(value);
+
+  return {
+    eyebrow: asString(record.eyebrow, fallback.eyebrow),
+    heading: asString(record.heading, fallback.heading),
+    cardLabel: asString(record.cardLabel, fallback.cardLabel),
+    emptyLinkLabel: asString(record.emptyLinkLabel, fallback.emptyLinkLabel),
+  };
+};
+
+const normalizeCvContentCopy = (
+  value: unknown,
+  fallback: CvContentCopy
+): CvContentCopy => {
+  const record = asRecord(value);
+
+  return {
+    documentLabel: asString(record.documentLabel, fallback.documentLabel),
+    backToPortfolioLabel: asString(record.backToPortfolioLabel, fallback.backToPortfolioLabel),
+    downloadLabel: asString(record.downloadLabel, fallback.downloadLabel),
+    printableStatusLabel: asString(record.printableStatusLabel, fallback.printableStatusLabel),
+    previewStatusLabel: asString(record.previewStatusLabel, fallback.previewStatusLabel),
+    printHint: asString(record.printHint, fallback.printHint),
+    summaryHeading: asString(record.summaryHeading, fallback.summaryHeading),
+    experienceHeading: asString(record.experienceHeading, fallback.experienceHeading),
+    skillsHeading: asString(record.skillsHeading, fallback.skillsHeading),
+    toolsHeading: asString(record.toolsHeading, fallback.toolsHeading),
+    certificationsHeading: asString(record.certificationsHeading, fallback.certificationsHeading),
+    achievementsHeading: asString(record.achievementsHeading, fallback.achievementsHeading),
+    projectsHeading: asString(record.projectsHeading, fallback.projectsHeading),
+    contactHeading: asString(record.contactHeading, fallback.contactHeading),
+    qrCaption: asString(record.qrCaption, fallback.qrCaption),
+  };
+};
+
 export const seededPortfolioContent: PortfolioContent = {
   profile: {
     name: "Charles",
     title: "ICT / IT Manager",
     bio: "ICT / IT Manager at KMSS National Office, Myanmar. I build dependable systems, support teams, and keep mission-critical operations running.",
     location: "Yangon, Myanmar",
+    photo: "",
   },
   hero: {
     headline: "Reliable IT leadership for real-world operations",
     subtext:
       "From infrastructure and Microsoft 365 to conferencing, CCTV, and support workflows, I help organizations stay stable, secure, and future-ready.",
+    downloadLabel: "Download CV",
+    summary:
+      "Quietly reliable ICT leadership grounded in infrastructure continuity, practical support, and mission-aligned execution.",
+    nameFontSize: "5.6rem",
+    headlineFontSize: "2.3rem",
+    highlights: [
+      {
+        label: "Experience",
+        value: "3 roles across KMSS National Office",
+      },
+      {
+        label: "Core strengths",
+        value: "Infrastructure, support systems, Microsoft 365, and resilient daily operations",
+      },
+      {
+        label: "Selected work",
+        value: "2 portfolio-backed initiatives and operational improvements",
+      },
+    ],
   },
   about: {
+    eyebrow: "About",
+    heading: "Practical technology leadership with a service-first mindset",
     description:
       "I have progressed from IT Volunteer to IT Officer to ICT / IT Manager by focusing on service quality, practical troubleshooting, and long-term resilience. My work combines hands-on technical execution with team enablement and process improvement.",
+  },
+  focus: {
+    eyebrow: "Current Focus",
+    heading: "Keeping teams productive and infrastructure dependable",
+  },
+  experienceSection: {
+    eyebrow: "Experience",
+    heading: "Career timeline built around continuity, support, and infrastructure trust",
+  },
+  skillsSection: {
+    eyebrow: "Capabilities",
+    heading: "Skills",
+  },
+  toolsSection: {
+    eyebrow: "Tooling",
+    heading: "Platforms & Systems",
+  },
+  certificationsSection: {
+    eyebrow: "Learning & Credentials",
+    heading: "Certifications",
+  },
+  achievementsSection: {
+    eyebrow: "Impact",
+    heading: "Achievements",
+  },
+  projectsSection: {
+    eyebrow: "Selected Work",
+    heading: "Projects and operational improvements with visible day-to-day impact",
+    cardLabel: "Key Work",
+    emptyLinkLabel: "Internal delivery / operational project",
+  },
+  contactSection: {
+    eyebrow: "Contact",
+    heading: "Open to practical conversations around infrastructure, systems, and support leadership",
   },
   experience: [
     {
@@ -231,7 +424,29 @@ export const seededPortfolioContent: PortfolioContent = {
     phone: "+95 9 xxx xxx xxx",
     linkedin: "https://linkedin.com",
     github: "",
-    website: "",
+    website: "https://cv-charles-mn.vercel.app",
+    facebook: "",
+    x: "",
+    instagram: "",
+    threads: "",
+    telegram: "",
+  },
+  cv: {
+    documentLabel: "Curriculum Vitae",
+    backToPortfolioLabel: "Back to Portfolio",
+    downloadLabel: "Download PDF",
+    printableStatusLabel: "Printable CV",
+    previewStatusLabel: "Previewing Draft CV",
+    printHint: "Use browser Print to save as PDF",
+    summaryHeading: "Professional Summary",
+    experienceHeading: "Experience",
+    skillsHeading: "Skills",
+    toolsHeading: "Tools",
+    certificationsHeading: "Certifications",
+    achievementsHeading: "Achievements",
+    projectsHeading: "Projects / Key Work",
+    contactHeading: "Contact",
+    qrCaption: "Scan the QR code to open the live portfolio",
   },
   seo: {
     title: "Charles | ICT / IT Manager Portfolio",
@@ -249,6 +464,7 @@ export const normalizePortfolioContent = (
   const hero = asRecord(data.hero);
   const about = asRecord(data.about);
   const contact = asRecord(data.contact);
+  const cv = asRecord(data.cv);
   const seo = asRecord(data.seo);
 
   return {
@@ -257,14 +473,42 @@ export const normalizePortfolioContent = (
       title: asString(profile.title, fallback.profile.title),
       bio: asString(profile.bio, fallback.profile.bio),
       location: asString(profile.location, fallback.profile.location),
+      photo: asString(profile.photo, fallback.profile.photo),
     },
     hero: {
       headline: asString(hero.headline, fallback.hero.headline),
       subtext: asString(hero.subtext, fallback.hero.subtext),
+      downloadLabel: asString(hero.downloadLabel, fallback.hero.downloadLabel),
+      summary: asString(hero.summary, fallback.hero.summary),
+      nameFontSize: asString(hero.nameFontSize, fallback.hero.nameFontSize),
+      headlineFontSize: asString(hero.headlineFontSize, fallback.hero.headlineFontSize),
+      highlights: normalizeHeroHighlights(hero.highlights, fallback.hero.highlights),
     },
     about: {
+      eyebrow: asString(about.eyebrow, fallback.about.eyebrow),
+      heading: asString(about.heading, fallback.about.heading),
       description: asString(about.description, fallback.about.description),
     },
+    focus: normalizeSectionContent(data.focus, fallback.focus),
+    experienceSection: normalizeSectionContent(
+      data.experienceSection,
+      fallback.experienceSection
+    ),
+    skillsSection: normalizeSectionContent(data.skillsSection, fallback.skillsSection),
+    toolsSection: normalizeSectionContent(data.toolsSection, fallback.toolsSection),
+    certificationsSection: normalizeSectionContent(
+      data.certificationsSection,
+      fallback.certificationsSection
+    ),
+    achievementsSection: normalizeSectionContent(
+      data.achievementsSection,
+      fallback.achievementsSection
+    ),
+    projectsSection: normalizeProjectSectionContent(
+      data.projectsSection,
+      fallback.projectsSection
+    ),
+    contactSection: normalizeSectionContent(data.contactSection, fallback.contactSection),
     experience: normalizeExperience(data.experience, fallback.experience),
     certifications: normalizeCertifications(data.certifications, fallback.certifications),
     skills: asStringArray(data.skills, fallback.skills),
@@ -277,7 +521,13 @@ export const normalizePortfolioContent = (
       linkedin: asString(contact.linkedin, fallback.contact.linkedin),
       github: asString(contact.github, fallback.contact.github),
       website: asString(contact.website, fallback.contact.website),
+      facebook: asString(contact.facebook, fallback.contact.facebook),
+      x: asString(contact.x, fallback.contact.x),
+      instagram: asString(contact.instagram, fallback.contact.instagram),
+      threads: asString(contact.threads, fallback.contact.threads),
+      telegram: asString(contact.telegram, fallback.contact.telegram),
     },
+    cv: normalizeCvContentCopy(cv, fallback.cv),
     seo: {
       title: asString(seo.title, fallback.seo.title),
       description: asString(seo.description, fallback.seo.description),
@@ -295,4 +545,3 @@ export const createSeededPortfolioRecord = (): PortfolioRecord => {
     publishedAt: timestamp,
   };
 };
-
