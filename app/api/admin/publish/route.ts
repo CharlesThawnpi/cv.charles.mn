@@ -28,14 +28,16 @@ export async function POST() {
       publishedAt: result.record.publishedAt,
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+
     console.error("[api/admin/publish] publish request failed", {
       user: session.email,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: message,
     });
 
     return NextResponse.json(
       {
-        error: "Publish failed. Check server logs for Firestore connectivity or permissions.",
+        error: `Publish failed: ${message}`,
       },
       { status: 500 }
     );

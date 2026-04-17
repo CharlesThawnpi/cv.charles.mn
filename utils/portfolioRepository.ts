@@ -6,7 +6,12 @@ import {
   type PortfolioContent,
   type PortfolioRecord,
 } from "@/config/contentModel";
-import { firestoreAdminDb, hasFirebaseAdminConfig } from "@/firebase/firebaseAdmin";
+import {
+  firebaseAdminInitError,
+  firestoreAdminDb,
+  getFirebaseAdminDebugInfo,
+  hasFirebaseAdminConfig,
+} from "@/firebase/firebaseAdmin";
 
 const PORTFOLIO_COLLECTION = "portfolio";
 const PORTFOLIO_DOCUMENT = "content";
@@ -73,6 +78,10 @@ const normalizePortfolioRecord = (input: unknown): PortfolioRecord => {
 };
 
 const readAdminFirestoreRecord = async (): Promise<PortfolioRecord | null> => {
+  if (firebaseAdminInitError) {
+    throw new Error(`Firebase Admin initialization failed: ${firebaseAdminInitError}`);
+  }
+
   if (!hasFirebaseAdminConfig || !firestoreAdminDb) {
     return null;
   }
@@ -80,6 +89,7 @@ const readAdminFirestoreRecord = async (): Promise<PortfolioRecord | null> => {
   const ref = firestoreAdminDb.collection(PORTFOLIO_COLLECTION).doc(PORTFOLIO_DOCUMENT);
   console.info("[portfolioRepository] reading Firestore Admin record", {
     path: getPortfolioDocumentPath(),
+    ...getFirebaseAdminDebugInfo(),
   });
 
   const snapshot = await withTimeout(
@@ -98,6 +108,10 @@ const readAdminFirestoreRecord = async (): Promise<PortfolioRecord | null> => {
 };
 
 const writeAdminFirestoreRecord = async (record: PortfolioRecord): Promise<void> => {
+  if (firebaseAdminInitError) {
+    throw new Error(`Firebase Admin initialization failed: ${firebaseAdminInitError}`);
+  }
+
   if (!hasFirebaseAdminConfig || !firestoreAdminDb) {
     return;
   }
@@ -107,6 +121,7 @@ const writeAdminFirestoreRecord = async (record: PortfolioRecord): Promise<void>
     path: getPortfolioDocumentPath(),
     updatedAt: record.updatedAt,
     publishedAt: record.publishedAt,
+    ...getFirebaseAdminDebugInfo(),
   });
 
   await withTimeout(
@@ -134,6 +149,7 @@ const getRecord = async (mode: "strict" | "fallback"): Promise<{
       console.error("[portfolioRepository] Firestore Admin read failed", {
         path: getPortfolioDocumentPath(),
         error: error instanceof Error ? error.message : "Unknown error",
+        ...getFirebaseAdminDebugInfo(),
       });
 
       if (mode === "strict") {
@@ -157,6 +173,7 @@ const persistRecord = async (
       console.error("[portfolioRepository] Firestore Admin write failed", {
         path: getPortfolioDocumentPath(),
         error: error instanceof Error ? error.message : "Unknown error",
+        ...getFirebaseAdminDebugInfo(),
       });
 
       if (mode === "strict") {
@@ -207,6 +224,7 @@ export const saveDraftPortfolioData = async (
   console.info("[portfolioRepository] saveDraftPortfolioData start", {
     firebaseConfigured: hasFirebaseAdminConfig,
     path: getPortfolioDocumentPath(),
+    ...getFirebaseAdminDebugInfo(),
   });
   const { record } = await getRecord("strict");
 
@@ -232,6 +250,7 @@ export const publishPortfolioData = async (): Promise<{
   console.info("[portfolioRepository] publishPortfolioData start", {
     firebaseConfigured: hasFirebaseAdminConfig,
     path: getPortfolioDocumentPath(),
+    ...getFirebaseAdminDebugInfo(),
   });
   const { record } = await getRecord("strict");
   const now = new Date().toISOString();

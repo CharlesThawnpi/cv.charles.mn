@@ -19,12 +19,14 @@ export async function GET() {
     const data = await getAdminPortfolioData();
     return NextResponse.json(data);
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+
     console.error("[api/admin/content] failed to load admin content", {
       user: session.email,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: message,
     });
 
-    return NextResponse.json({ error: "Unable to load admin content." }, { status: 500 });
+    return NextResponse.json({ error: `Unable to load admin content: ${message}` }, { status: 500 });
   }
 }
 
@@ -50,13 +52,15 @@ export async function PUT(request: Request) {
       updatedAt: result.record.updatedAt,
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+
     console.error("[api/admin/content] failed to save draft", {
       user: session.email,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: message,
     });
 
     return NextResponse.json(
-      { error: "Save failed. Check server logs for Firestore connectivity or permissions." },
+      { error: `Save failed: ${message}` },
       { status: 500 }
     );
   }
