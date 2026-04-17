@@ -32,6 +32,12 @@ interface PortfolioRow {
   published_at: Date | string | null;
 }
 
+interface RepositoryRecord {
+  record: PortfolioRecord;
+  rawDraft: unknown;
+  rawPublished: unknown;
+}
+
 const CREATE_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS portfolio_content (
     id TEXT PRIMARY KEY,
@@ -67,6 +73,31 @@ const asIsoString = (value: Date | string | null | undefined, fallback: string |
   }
 
   return fallback;
+};
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
+// Merge normalized schema data into the raw stored JSON so future schema additions
+// backfill safely without dropping already-saved keys that newer/older code doesn't know about.
+const mergeStoredContent = (base: unknown, next: unknown): unknown => {
+  if (Array.isArray(next)) {
+    return next;
+  }
+
+  if (isPlainObject(next)) {
+    const baseObject = isPlainObject(base) ? base : {};
+    const merged: Record<string, unknown> = { ...baseObject };
+
+    for (const [key, value] of Object.entries(next)) {
+      merged[key] = mergeStoredContent(baseObject[key], value);
+    }
+
+    return merged;
+  }
+
+  return next;
 };
 
 const normalizePortfolioRecord = (input: unknown): PortfolioRecord => {
@@ -123,7 +154,7 @@ const ensurePortfolioTable = async () => {
   }
 };
 
-const readPostgresRecord = async (): Promise<PortfolioRecord | null> => {
+const readPostgresRecord = async (): Promise<RepositoryRecord | null> => {
   await ensurePortfolioTable();
 
   return withPostgresClient(async (client) => {
@@ -154,11 +185,17 @@ const readPostgresRecord = async (): Promise<PortfolioRecord | null> => {
       return null;
     }
 
-    return mapPortfolioRow(result.rows[0]);
+    const row = result.rows[0];
+
+    return {
+      record: mapPortfolioRow(row),
+      rawDraft: row.draft_json,
+      rawPublished: row.published_json,
+    };
   }, "Read portfolio record");
 };
 
-const insertSeedRecordIfMissing = async (): Promise<PortfolioRecord> => {
+const insertSeedRecordIfMissing = async (): Promise<RepositoryRecord> => {
   await ensurePortfolioTable();
 
   const seed = createSeededPortfolioRecord();
@@ -210,7 +247,13 @@ const insertSeedRecordIfMissing = async (): Promise<PortfolioRecord> => {
       throw new Error("Failed to seed PostgreSQL portfolio content record.");
     }
 
-    return mapPortfolioRow(result.rows[0]);
+    const row = result.rows[0];
+
+    return {
+      record: mapPortfolioRow(row),
+      rawDraft: row.draft_json,
+      rawPublished: row.published_json,
+    };
   }, "Seed portfolio record");
 };
 
@@ -257,8 +300,12 @@ const writePostgresRecord = async (record: PortfolioRecord): Promise<void> => {
   }, "Write portfolio record");
 };
 
-const getRecord = async (mode: "strict" | "fallback"): Promise<{
+const getRecord = async (
+  mode: "strict" | "fallback"
+): Promise<{
   record: PortfolioRecord;
+  rawDraft: unknown;
+  rawPublished: unknown;
   source: "postgres" | "local";
 }> => {
   if (hasPostgresConfig) {
@@ -266,11 +313,21 @@ const getRecord = async (mode: "strict" | "fallback"): Promise<{
       const postgresRecord = await readPostgresRecord();
 
       if (postgresRecord) {
-        return { record: postgresRecord, source: "postgres" };
+        return {
+          record: postgresRecord.record,
+          rawDraft: postgresRecord.rawDraft,
+          rawPublished: postgresRecord.rawPublished,
+          source: "postgres",
+        };
       }
 
       const seededRecord = await insertSeedRecordIfMissing();
-      return { record: seededRecord, source: "postgres" };
+      return {
+        record: seededRecord.record,
+        rawDraft: seededRecord.rawDraft,
+        rawPublished: seededRecord.rawPublished,
+        source: "postgres",
+      };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown PostgreSQL error";
 
@@ -287,7 +344,14 @@ const getRecord = async (mode: "strict" | "fallback"): Promise<{
     }
   }
 
-  return { record: getFallbackRecord(), source: "local" };
+  const fallbackRecord = getFallbackRecord();
+
+  return {
+    record: fallbackRecord,
+    rawDraft: fallbackRecord.draft,
+    rawPublished: fallbackRecord.published,
+    source: "local",
+  };
 };
 
 const persistRecord = async (
@@ -360,13 +424,27 @@ export const saveDraftPortfolioData = async (
     ...getPostgresDebugInfo(),
   });
 
-  const { record } = await getRecord("strict");
+  const { record, rawDraft, rawPublished } = await getRecord("strict");
+  const normalizedDraft = normalizePortfolioContent(input, record.draft);
+  const mergedDraft = normalizePortfolioContent(
+    mergeStoredContent(rawDraft, normalizedDraft),
+    record.draft
+  );
 
   const nextRecord: PortfolioRecord = {
     ...record,
-    draft: normalizePortfolioContent(input, record.draft),
+    draft: mergedDraft,
+    published: normalizePortfolioContent(
+      mergeStoredContent(rawPublished, record.published),
+      record.published
+    ),
     updatedAt: new Date().toISOString(),
   };
+
+  console.info("[portfolioRepository] saveDraftPortfolioData merge strategy", {
+    preservesRawStoredKeys: true,
+    addsSchemaDefaultsSafely: true,
+  });
 
   const source = await persistRecord(nextRecord, "strict");
   console.info("[portfolioRepository] saveDraftPortfolioData complete", {
@@ -389,15 +467,24 @@ export const publishPortfolioData = async (): Promise<{
     ...getPostgresDebugInfo(),
   });
 
-  const { record } = await getRecord("strict");
+  const { record, rawPublished } = await getRecord("strict");
   const now = new Date().toISOString();
+  const mergedPublished = normalizePortfolioContent(
+    mergeStoredContent(rawPublished, record.draft),
+    record.draft
+  );
 
   const nextRecord: PortfolioRecord = {
     ...record,
-    published: structuredClone(record.draft),
+    published: structuredClone(mergedPublished),
     updatedAt: now,
     publishedAt: now,
   };
+
+  console.info("[portfolioRepository] publishPortfolioData merge strategy", {
+    preservesRawStoredKeys: true,
+    addsSchemaDefaultsSafely: true,
+  });
 
   const source = await persistRecord(nextRecord, "strict");
   console.info("[portfolioRepository] publishPortfolioData complete", {
