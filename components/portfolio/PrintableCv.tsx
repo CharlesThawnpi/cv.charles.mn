@@ -1,4 +1,3 @@
-﻿import Link from "next/link";
 import type { PortfolioContent } from "@/config/contentModel";
 
 interface PrintableCvProps {
@@ -10,7 +9,7 @@ export function PrintableCv({ content, mode }: PrintableCvProps) {
   return (
     <main className="cv-page">
       <header className="cv-header no-print">
-        <Link href="/">Back to Portfolio</Link>
+        <a href="/">Back to Portfolio</a>
         <div>
           <span>{mode === "preview" ? "Draft Preview" : "Published"}</span>
           <span>Use browser Print to save as PDF</span>
@@ -87,4 +86,3 @@ export function PrintableCv({ content, mode }: PrintableCvProps) {
     </main>
   );
 }
-
