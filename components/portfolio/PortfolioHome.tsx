@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import type { PortfolioContent } from "@/config/contentModel";
 
 interface PortfolioHomeProps {
@@ -11,47 +11,111 @@ export function PortfolioHome({ content, source, mode }: PortfolioHomeProps) {
   return (
     <main className="portfolio-shell">
       <div className="grain-layer" aria-hidden="true" />
+      <div className="aurora-layer" aria-hidden="true" />
+
       <header className="hero-wrap">
-        <div className="hero-topbar">
-          <span className="status-pill">{mode === "preview" ? "Previewing Draft" : "Published"}</span>
-          <span className="status-pill">Data source: {source}</span>
-          <Link className="status-link" href="/cv">
-            Printable CV
-          </Link>
-        </div>
-        <h1>{content.hero.headline}</h1>
-        <p>{content.hero.subtext}</p>
-        <div className="hero-meta">
-          <strong>{content.profile.name}</strong>
-          <span>{content.profile.title}</span>
-          <span>{content.profile.location}</span>
+        <div className="hero-grid">
+          <div className="hero-copy">
+            <div className="hero-topbar">
+              <span className="status-pill">{mode === "preview" ? "Previewing Draft" : "Published"}</span>
+              <span className="status-pill">Data source: {source}</span>
+            </div>
+
+            <p className="hero-kicker">{content.profile.name}</p>
+            <h1>{content.hero.headline}</h1>
+            <p className="hero-description">{content.hero.subtext}</p>
+
+            <div className="hero-actions">
+              <Link className="hero-primary-link" href="/cv">
+                Open Printable CV
+              </Link>
+              <a className="hero-secondary-link" href={`mailto:${content.contact.email}`}>
+                Contact Charles
+              </a>
+            </div>
+
+            <div className="hero-meta">
+              <strong>{content.profile.title}</strong>
+              <span>{content.profile.location}</span>
+              <span>{content.skills[0] ?? "ICT Leadership"}</span>
+            </div>
+          </div>
+
+          <aside className="hero-side">
+            <article className="hero-side-card glass-panel">
+              <span className="card-label">Profile</span>
+              <strong>{content.profile.title}</strong>
+              <p>{content.profile.bio}</p>
+            </article>
+
+            <div className="hero-side-grid">
+              <article className="hero-stat-card glass-panel">
+                <span className="card-label">Career Journey</span>
+                <strong>{content.experience.length} roles</strong>
+                <p>Progression from volunteer support into strategic ICT leadership.</p>
+              </article>
+
+              <article className="hero-stat-card glass-panel">
+                <span className="card-label">Operational Focus</span>
+                <strong>{content.projects.length} key initiatives</strong>
+                <p>Infrastructure, collaboration systems, and resilient support delivery.</p>
+              </article>
+            </div>
+          </aside>
         </div>
       </header>
 
-      <section className="surface-card">
-        <h2>About</h2>
-        <p>{content.about.description}</p>
+      <section className="section-shell section-grid two-col">
+        <article className="glass-panel feature-panel">
+          <div className="section-heading">
+            <span>About</span>
+            <h2>Practical technology leadership with a service-first mindset</h2>
+          </div>
+          <p className="section-copy">{content.about.description}</p>
+        </article>
+
+        <article className="glass-panel feature-panel compact-panel">
+          <div className="section-heading">
+            <span>Current Focus</span>
+            <h2>Keeping teams productive and infrastructure dependable</h2>
+          </div>
+          <ul className="impact-list">
+            {content.achievements.slice(0, 3).map((achievement) => (
+              <li key={achievement}>{achievement}</li>
+            ))}
+          </ul>
+        </article>
       </section>
 
-      <section className="surface-card">
-        <h2>Career Timeline</h2>
-        <ol className="timeline-list">
+      <section className="section-shell">
+        <div className="section-heading section-heading-inline">
+          <div>
+            <span>Experience</span>
+            <h2>Career timeline built around continuity, support, and infrastructure trust</h2>
+          </div>
+        </div>
+        <ol className="timeline-list premium-timeline">
           {content.experience.map((experience, index) => (
             <li key={`${experience.company}-${index}`}>
-              <div>
-                <strong>{experience.role}</strong>
-                <span>{experience.company}</span>
+              <div className="timeline-topline">
+                <div>
+                  <strong>{experience.role}</strong>
+                  <span>{experience.company}</span>
+                </div>
+                <em>{experience.duration}</em>
               </div>
-              <span>{experience.duration}</span>
               <p>{experience.details}</p>
             </li>
           ))}
         </ol>
       </section>
 
-      <section className="surface-grid two-col">
-        <article className="surface-card">
-          <h2>Skills</h2>
+      <section className="section-shell section-grid two-col">
+        <article className="glass-panel surface-card skill-card">
+          <div className="section-heading">
+            <span>Capabilities</span>
+            <h2>Skills</h2>
+          </div>
           <ul className="chip-list">
             {content.skills.map((skill) => (
               <li key={skill}>{skill}</li>
@@ -59,9 +123,12 @@ export function PortfolioHome({ content, source, mode }: PortfolioHomeProps) {
           </ul>
         </article>
 
-        <article className="surface-card">
-          <h2>Tools</h2>
-          <ul className="chip-list">
+        <article className="glass-panel surface-card skill-card">
+          <div className="section-heading">
+            <span>Tooling</span>
+            <h2>Platforms & Systems</h2>
+          </div>
+          <ul className="chip-list chip-list-soft">
             {content.tools.map((tool) => (
               <li key={tool}>{tool}</li>
             ))}
@@ -69,25 +136,50 @@ export function PortfolioHome({ content, source, mode }: PortfolioHomeProps) {
         </article>
       </section>
 
-      <section className="surface-card">
-        <h2>Certifications</h2>
-        <ul className="detail-list">
-          {content.certifications.map((certification, index) => (
-            <li key={`${certification.name}-${index}`}>
-              <strong>{certification.name}</strong>
-              <span>{certification.issuer}</span>
-              <span>{certification.date}</span>
-            </li>
-          ))}
-        </ul>
+      <section className="section-shell section-grid two-col">
+        <article className="glass-panel surface-card">
+          <div className="section-heading">
+            <span>Learning & Credentials</span>
+            <h2>Certifications</h2>
+          </div>
+          <ul className="detail-list certification-list">
+            {content.certifications.map((certification, index) => (
+              <li key={`${certification.name}-${index}`}>
+                <strong>{certification.name}</strong>
+                <span>{certification.issuer}</span>
+                <span>{certification.date}</span>
+              </li>
+            ))}
+          </ul>
+        </article>
+
+        <article className="glass-panel surface-card">
+          <div className="section-heading">
+            <span>Impact</span>
+            <h2>Achievements</h2>
+          </div>
+          <ul className="impact-list">
+            {content.achievements.map((achievement) => (
+              <li key={achievement}>{achievement}</li>
+            ))}
+          </ul>
+        </article>
       </section>
 
-      <section className="surface-card">
-        <h2>Projects / Key Work</h2>
-        <div className="projects-grid">
+      <section className="section-shell">
+        <div className="section-heading section-heading-inline">
+          <div>
+            <span>Selected Work</span>
+            <h2>Projects and operational improvements with visible day-to-day impact</h2>
+          </div>
+        </div>
+        <div className="projects-grid premium-projects">
           {content.projects.map((project, index) => (
-            <article key={`${project.name}-${index}`} className="project-card">
-              <h3>{project.name}</h3>
+            <article key={`${project.name}-${index}`} className="project-card glass-panel">
+              <div className="project-card-top">
+                <span className="card-label">Key Work</span>
+                <h3>{project.name}</h3>
+              </div>
               <p>{project.description}</p>
               {project.link ? (
                 <a href={project.link} target="_blank" rel="noreferrer">
@@ -101,60 +193,55 @@ export function PortfolioHome({ content, source, mode }: PortfolioHomeProps) {
         </div>
       </section>
 
-      <section className="surface-card">
-        <h2>Achievements / Impact</h2>
-        <ul className="impact-list">
-          {content.achievements.map((achievement) => (
-            <li key={achievement}>{achievement}</li>
-          ))}
-        </ul>
+      <section className="section-shell">
+        <article className="glass-panel contact-spotlight">
+          <div className="section-heading">
+            <span>Contact</span>
+            <h2>Open to practical conversations around infrastructure, systems, and support leadership</h2>
+          </div>
+          <div className="contact-grid">
+            <p>
+              <span>Email</span>
+              <a href={`mailto:${content.contact.email}`}>{content.contact.email}</a>
+            </p>
+            {content.contact.phone && (
+              <p>
+                <span>Phone</span>
+                <span>{content.contact.phone}</span>
+              </p>
+            )}
+            {content.contact.linkedin && (
+              <p>
+                <span>LinkedIn</span>
+                <a href={content.contact.linkedin} target="_blank" rel="noreferrer">
+                  {content.contact.linkedin}
+                </a>
+              </p>
+            )}
+            {content.contact.github && (
+              <p>
+                <span>GitHub</span>
+                <a href={content.contact.github} target="_blank" rel="noreferrer">
+                  {content.contact.github}
+                </a>
+              </p>
+            )}
+            {content.contact.website && (
+              <p>
+                <span>Website</span>
+                <a href={content.contact.website} target="_blank" rel="noreferrer">
+                  {content.contact.website}
+                </a>
+              </p>
+            )}
+          </div>
+        </article>
       </section>
 
-      <section className="surface-card contact-card">
-        <h2>Contact</h2>
-        <div className="contact-grid">
-          <p>
-            <span>Email</span>
-            <a href={`mailto:${content.contact.email}`}>{content.contact.email}</a>
-          </p>
-          {content.contact.phone && (
-            <p>
-              <span>Phone</span>
-              <span>{content.contact.phone}</span>
-            </p>
-          )}
-          {content.contact.linkedin && (
-            <p>
-              <span>LinkedIn</span>
-              <a href={content.contact.linkedin} target="_blank" rel="noreferrer">
-                {content.contact.linkedin}
-              </a>
-            </p>
-          )}
-          {content.contact.github && (
-            <p>
-              <span>GitHub</span>
-              <a href={content.contact.github} target="_blank" rel="noreferrer">
-                {content.contact.github}
-              </a>
-            </p>
-          )}
-          {content.contact.website && (
-            <p>
-              <span>Website</span>
-              <a href={content.contact.website} target="_blank" rel="noreferrer">
-                {content.contact.website}
-              </a>
-            </p>
-          )}
-        </div>
-      </section>
-
-      <footer className="portfolio-footer">
+      <footer className="portfolio-footer glass-panel">
         <p>{content.profile.name}</p>
         <p>{content.seo.description}</p>
       </footer>
     </main>
   );
 }
-
