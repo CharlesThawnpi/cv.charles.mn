@@ -428,7 +428,7 @@ export function CvPdfDocument({
               <View style={styles.list}>
                 {content.achievements.map((achievement) => (
                   <Text key={achievement} style={styles.sectionText}>
-                    • {achievement}
+                    - {achievement}
                   </Text>
                 ))}
               </View>
