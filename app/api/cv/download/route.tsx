@@ -2,11 +2,14 @@ import { draftMode } from "next/headers";
 import { renderToBuffer } from "@react-pdf/renderer";
 import QRCode from "qrcode";
 import { CvPdfDocument } from "@/components/pdf/CvPdfDocument";
+import {
+  CANONICAL_PORTFOLIO_URL,
+  formatDisplayUrl,
+  preparePublicPortfolioContent,
+} from "@/utils/publicContent";
 import { getPublicPortfolioData } from "@/utils/portfolioRepository";
 
 export const dynamic = "force-dynamic";
-
-const FALLBACK_PORTFOLIO_URL = "https://cv-charles-mn.vercel.app";
 
 const toSlug = (value: string) =>
   value
@@ -18,11 +21,9 @@ export async function GET() {
   try {
     const { isEnabled } = await draftMode();
     const { content } = await getPublicPortfolioData(isEnabled);
-    const portfolioUrl =
-      content.cv.portfolioUrl?.trim() ||
-      process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-      FALLBACK_PORTFOLIO_URL;
-    const displayPortfolioUrl = content.cv.portfolioUrl?.trim() || "";
+    const publicContent = preparePublicPortfolioContent(content);
+    const portfolioUrl = publicContent.cv.portfolioUrl?.trim() || CANONICAL_PORTFOLIO_URL;
+    const displayPortfolioUrl = formatDisplayUrl(portfolioUrl);
 
     const qrCodeDataUrl = await QRCode.toDataURL(portfolioUrl, {
       margin: 1,
@@ -35,13 +36,13 @@ export async function GET() {
 
     const pdfBuffer = await renderToBuffer(
       <CvPdfDocument
-        content={content}
+        content={publicContent}
         portfolioUrl={portfolioUrl}
         displayPortfolioUrl={displayPortfolioUrl}
         qrCodeDataUrl={qrCodeDataUrl}
       />
     );
-    const fileName = `${toSlug(content.profile.name || "charles")}-cv.pdf`;
+    const fileName = `${toSlug(publicContent.profile.name || "charles")}-cv.pdf`;
     const pdfBytes = new Uint8Array(pdfBuffer);
 
     return new Response(pdfBytes, {

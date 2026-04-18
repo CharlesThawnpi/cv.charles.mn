@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { ADMIN_SESSION_COOKIE } from "@/utils/constants";
 
@@ -10,7 +10,7 @@ const PUBLIC_ADMIN_APIS = new Set([
   "/api/admin/logout",
 ]);
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const hasSession = Boolean(request.cookies.get(ADMIN_SESSION_COOKIE)?.value);
 

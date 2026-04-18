@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent, useEffect, useState } from "react";
+import { type ChangeEvent, useEffect, useEffectEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   seededPortfolioContent,
@@ -48,7 +48,7 @@ export default function AdminDashboardClient() {
   const persistenceWarning =
     "Persistent storage is not configured. Connect Vercel Postgres or set DATABASE_URL before editing, or your changes will disappear after a refresh, cold start, or deploy.";
 
-  const loadDraft = async () => {
+  const loadDraft = useEffectEvent(async () => {
     setLoading(true);
     setError("");
 
@@ -73,7 +73,7 @@ export default function AdminDashboardClient() {
     setPublishedAt(payload.record.publishedAt);
     setUpdatedAt(payload.record.updatedAt);
     setLoading(false);
-  };
+  });
 
   useEffect(() => {
     void loadDraft();

@@ -1,6 +1,7 @@
 import { draftMode } from "next/headers";
 import Link from "next/link";
 import { SocialLinks } from "@/components/portfolio/SocialLinks";
+import { formatDisplayUrl, preparePublicPortfolioContent } from "@/utils/publicContent";
 import { getPublicPortfolioData } from "@/utils/portfolioRepository";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +9,8 @@ export const dynamic = "force-dynamic";
 export default async function CvPage() {
   const { isEnabled } = await draftMode();
   const data = await getPublicPortfolioData(isEnabled);
-  const { content, mode } = data;
+  const content = preparePublicPortfolioContent(data.content);
+  const { mode } = data;
   const heroPhoto = content.profile.photo?.trim();
 
   return (
@@ -17,9 +19,13 @@ export default async function CvPage() {
         <header className="cv-header no-print">
           <Link href="/">{content.cv.backToPortfolioLabel}</Link>
           <div className="cv-actions">
-            <a href="/api/cv/download">{content.cv.downloadLabel}</a>
-            <span>{mode === "preview" ? content.cv.previewStatusLabel : content.cv.printableStatusLabel}</span>
-            <span>{content.cv.printHint}</span>
+            <a className="cv-primary-action" href="/api/cv/download">
+              {content.cv.downloadLabel}
+            </a>
+            <span className="cv-status-pill">
+              {mode === "preview" ? content.cv.previewStatusLabel : content.cv.printableStatusLabel}
+            </span>
+            <span className="cv-status-pill cv-status-pill-subtle">{content.cv.printHint}</span>
           </div>
         </header>
 
@@ -45,10 +51,12 @@ export default async function CvPage() {
                   <span>Location</span>
                   <strong>{content.profile.location}</strong>
                 </p>
-                <p>
-                  <span>Email</span>
-                  <strong>{content.contact.email}</strong>
-                </p>
+                {content.contact.email && (
+                  <p>
+                    <span>Email</span>
+                    <strong>{content.contact.email}</strong>
+                  </p>
+                )}
                 {content.contact.phone && (
                   <p>
                     <span>Phone</span>
@@ -141,7 +149,11 @@ export default async function CvPage() {
                 <article key={`${project.name}-${index}`} className="cv-panel cv-project-card">
                   <strong>{project.name}</strong>
                   <p>{project.description}</p>
-                  {project.link ? <p className="cv-project-link">{project.link}</p> : null}
+                  {project.link ? (
+                    <a className="cv-project-link" href={project.link} target="_blank" rel="noreferrer">
+                      {formatDisplayUrl(project.link)}
+                    </a>
+                  ) : null}
                 </article>
               ))}
             </div>
@@ -150,10 +162,12 @@ export default async function CvPage() {
           <section className="cv-section cv-panel">
             <h3>{content.cv.contactHeading}</h3>
             <div className="cv-contact-grid">
-              <p>
-                <span>Email</span>
-                <strong>{content.contact.email}</strong>
-              </p>
+              {content.contact.email && (
+                <p>
+                  <span>Email</span>
+                  <strong>{content.contact.email}</strong>
+                </p>
+              )}
               {content.contact.phone && (
                 <p>
                   <span>Phone</span>
@@ -163,13 +177,21 @@ export default async function CvPage() {
               {content.contact.linkedin && (
                 <p>
                   <span>LinkedIn</span>
-                  <strong>{content.contact.linkedin}</strong>
+                  <strong>
+                    <a href={content.contact.linkedin} target="_blank" rel="noreferrer">
+                      {formatDisplayUrl(content.contact.linkedin)}
+                    </a>
+                  </strong>
                 </p>
               )}
               {content.contact.website && (
                 <p>
-                  <span>Website</span>
-                  <strong>{content.contact.website}</strong>
+                  <span>Portfolio</span>
+                  <strong>
+                    <a href={content.contact.website} target="_blank" rel="noreferrer">
+                      {formatDisplayUrl(content.contact.website)}
+                    </a>
+                  </strong>
                 </p>
               )}
             </div>

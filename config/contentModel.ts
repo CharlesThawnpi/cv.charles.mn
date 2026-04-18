@@ -282,17 +282,17 @@ export const seededPortfolioContent: PortfolioContent = {
   profile: {
     name: "Charles",
     title: "ICT / IT Manager",
-    bio: "ICT / IT Manager at KMSS National Office, Myanmar. I build dependable systems, support teams, and keep mission-critical operations running.",
+    bio: "ICT / IT Manager at KMSS National Office, Myanmar, focused on dependable systems, responsive support, and practical day-to-day operations.",
     location: "Yangon, Myanmar",
     photo: "",
   },
   hero: {
-    headline: "Reliable IT leadership for real-world operations",
+    headline: "Practical IT leadership for dependable day-to-day operations",
     subtext:
-      "From infrastructure and Microsoft 365 to conferencing, CCTV, and support workflows, I help organizations stay stable, secure, and future-ready.",
+      "I help teams stay connected and productive through dependable infrastructure, Microsoft 365, conferencing, CCTV, and responsive IT support.",
     downloadLabel: "Download CV",
     summary:
-      "Quietly reliable ICT leadership grounded in infrastructure continuity, practical support, and mission-aligned execution.",
+      "Hands-on ICT leadership focused on service continuity, reliable infrastructure, and steady improvements that help teams work with confidence.",
     nameFontSize: "5.6rem",
     headlineFontSize: "2.3rem",
     highlights: [
@@ -312,17 +312,17 @@ export const seededPortfolioContent: PortfolioContent = {
   },
   about: {
     eyebrow: "About",
-    heading: "Practical technology leadership with a service-first mindset",
+    heading: "Technology leadership built on service, continuity, and trust",
     description:
-      "I have progressed from IT Volunteer to IT Officer to ICT / IT Manager by focusing on service quality, practical troubleshooting, and long-term resilience. My work combines hands-on technical execution with team enablement and process improvement.",
+      "My path from IT Volunteer to IT Officer to ICT / IT Manager has been shaped by practical troubleshooting, dependable support, and steady systems improvement. I combine hands-on technical execution with team coordination and long-term operational thinking.",
   },
   focus: {
     eyebrow: "Current Focus",
-    heading: "Keeping teams productive and infrastructure dependable",
+    heading: "Keeping teams productive through dependable systems and support",
   },
   experienceSection: {
     eyebrow: "Experience",
-    heading: "Career timeline built around continuity, support, and infrastructure trust",
+    heading: "Experience shaped by infrastructure continuity, support delivery, and operational trust",
   },
   skillsSection: {
     eyebrow: "Capabilities",
@@ -342,13 +342,13 @@ export const seededPortfolioContent: PortfolioContent = {
   },
   projectsSection: {
     eyebrow: "Selected Work",
-    heading: "Projects and operational improvements with visible day-to-day impact",
-    cardLabel: "Key Work",
-    emptyLinkLabel: "Internal delivery / operational project",
+    heading: "Selected projects and operational improvements with day-to-day impact",
+    cardLabel: "Selected Work",
+    emptyLinkLabel: "Internal delivery / no public link",
   },
   contactSection: {
     eyebrow: "Contact",
-    heading: "Open to practical conversations around infrastructure, systems, and support leadership",
+    heading: "Open to conversations about IT operations, infrastructure, and support leadership",
   },
   experience: [
     {
@@ -422,11 +422,11 @@ export const seededPortfolioContent: PortfolioContent = {
     "Helped modernize office workflows with practical, low-risk improvements",
   ],
   contact: {
-    email: "charles@example.com",
-    phone: "+95 9 xxx xxx xxx",
-    linkedin: "https://linkedin.com",
+    email: "",
+    phone: "",
+    linkedin: "",
     github: "",
-    website: "https://cv-charles-mn.vercel.app",
+    website: "https://cv.charles.mn",
     facebook: "",
     x: "",
     instagram: "",
@@ -436,25 +436,25 @@ export const seededPortfolioContent: PortfolioContent = {
   cv: {
     documentLabel: "Curriculum Vitae",
     backToPortfolioLabel: "Back to Portfolio",
-    downloadLabel: "Download PDF",
-    portfolioUrl: "https://cv-charles-mn.vercel.app",
-    printableStatusLabel: "Printable CV",
-    previewStatusLabel: "Previewing Draft CV",
-    printHint: "Use browser Print to save as PDF",
+    downloadLabel: "Download CV PDF",
+    portfolioUrl: "https://cv.charles.mn",
+    printableStatusLabel: "Printable version",
+    previewStatusLabel: "Draft preview",
+    printHint: "Print or save as PDF from your browser",
     summaryHeading: "Professional Summary",
     experienceHeading: "Experience",
     skillsHeading: "Skills",
     toolsHeading: "Tools",
     certificationsHeading: "Certifications",
     achievementsHeading: "Achievements",
-    projectsHeading: "Projects / Key Work",
+    projectsHeading: "Selected Projects",
     contactHeading: "Contact",
-    qrCaption: "Scan the QR code to open the live portfolio",
+    qrCaption: "Scan to open the live portfolio at cv.charles.mn",
   },
   seo: {
     title: "Charles | ICT / IT Manager Portfolio",
     description:
-      "Portfolio of Charles, ICT / IT Manager focused on support excellence, infrastructure reliability, and mission-driven technology operations.",
+      "Portfolio of Charles, ICT / IT Manager focused on dependable support, infrastructure stability, and practical technology operations.",
   },
 };
 

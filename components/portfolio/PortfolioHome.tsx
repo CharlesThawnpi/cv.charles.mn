@@ -1,6 +1,7 @@
 import type { CSSProperties, SVGProps } from "react";
 import type { PortfolioContent } from "@/config/contentModel";
 import { SocialLinks } from "@/components/portfolio/SocialLinks";
+import { formatDisplayUrl } from "@/utils/publicContent";
 
 interface PortfolioHomeProps {
   content: PortfolioContent;
@@ -237,10 +238,12 @@ export function PortfolioHome({ content }: PortfolioHomeProps) {
             <h2>{content.contactSection.heading}</h2>
           </div>
           <div className="contact-grid">
-            <p>
-              <span>Email</span>
-              <a href={`mailto:${content.contact.email}`}>{content.contact.email}</a>
-            </p>
+            {content.contact.email && (
+              <p>
+                <span>Email</span>
+                <a href={`mailto:${content.contact.email}`}>{content.contact.email}</a>
+              </p>
+            )}
             {content.contact.phone && (
               <p>
                 <span>Phone</span>
@@ -251,15 +254,15 @@ export function PortfolioHome({ content }: PortfolioHomeProps) {
               <p>
                 <span>LinkedIn</span>
                 <a href={content.contact.linkedin} target="_blank" rel="noreferrer">
-                  {content.contact.linkedin}
+                  {formatDisplayUrl(content.contact.linkedin)}
                 </a>
               </p>
             )}
             {content.contact.website && (
               <p>
-                <span>Website</span>
+                <span>Portfolio</span>
                 <a href={content.contact.website} target="_blank" rel="noreferrer">
-                  {content.contact.website}
+                  {formatDisplayUrl(content.contact.website)}
                 </a>
               </p>
             )}

@@ -11,6 +11,7 @@ import {
 import type { ReactNode } from "react";
 import type { PortfolioContent } from "@/config/contentModel";
 import { getPdfSocialLinks } from "@/components/portfolio/SocialLinks";
+import { formatDisplayUrl } from "@/utils/publicContent";
 
 Font.registerHyphenationCallback((word) => [word]);
 
@@ -445,7 +446,7 @@ export function CvPdfDocument({
                   </Text>
                   {project.link ? (
                     <Link src={project.link} style={styles.socialLink}>
-                      {project.link}
+                      {formatDisplayUrl(project.link)}
                     </Link>
                   ) : null}
                 </View>
@@ -471,7 +472,7 @@ export function CvPdfDocument({
                     <View style={styles.socialLinks}>
                       {socialLinks.map((item) => (
                         <Link key={item.label} src={item.href} style={styles.socialLink}>
-                          {item.label}: {item.href}
+                          {item.label}: {formatDisplayUrl(item.href)}
                         </Link>
                       ))}
                     </View>
