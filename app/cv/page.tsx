@@ -1,4 +1,5 @@
 import { draftMode } from "next/headers";
+import Link from "next/link";
 import { SocialLinks } from "@/components/portfolio/SocialLinks";
 import { getPublicPortfolioData } from "@/utils/portfolioRepository";
 
@@ -14,7 +15,7 @@ export default async function CvPage() {
     <main className="cv-page">
       <div className="cv-shell">
         <header className="cv-header no-print">
-          <a href="/">{content.cv.backToPortfolioLabel}</a>
+          <Link href="/">{content.cv.backToPortfolioLabel}</Link>
           <div className="cv-actions">
             <a href="/api/cv/download">{content.cv.downloadLabel}</a>
             <span>{mode === "preview" ? content.cv.previewStatusLabel : content.cv.printableStatusLabel}</span>
