@@ -44,6 +44,9 @@ export default function AdminDashboardClient() {
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const persistenceUnavailable = !postgresConfigured;
+  const persistenceWarning =
+    "Persistent storage is not configured. Connect Vercel Postgres or set DATABASE_URL before editing, or your changes will disappear after a refresh, cold start, or deploy.";
 
   const loadDraft = async () => {
     setLoading(true);
@@ -77,6 +80,12 @@ export default function AdminDashboardClient() {
   }, []);
 
   const saveDraft = async () => {
+    if (persistenceUnavailable) {
+      setMessage("");
+      setError(persistenceWarning);
+      return;
+    }
+
     setSaving(true);
     setMessage("");
     setError("");
@@ -112,6 +121,12 @@ export default function AdminDashboardClient() {
   };
 
   const publishDraft = async () => {
+    if (persistenceUnavailable) {
+      setMessage("");
+      setError(persistenceWarning);
+      return;
+    }
+
     setPublishing(true);
     setMessage("");
     setError("");
@@ -227,10 +242,10 @@ export default function AdminDashboardClient() {
           </p>
         </div>
         <div className="admin-actions">
-          <button type="button" onClick={saveDraft} disabled={saving}>
+          <button type="button" onClick={saveDraft} disabled={saving || persistenceUnavailable}>
             {saving ? "Saving..." : "Save Draft"}
           </button>
-          <button type="button" onClick={publishDraft} disabled={publishing}>
+          <button type="button" onClick={publishDraft} disabled={publishing || persistenceUnavailable}>
             {publishing ? "Publishing..." : "Publish"}
           </button>
           <a href="/api/preview/enable?redirect=/" target="_blank" rel="noreferrer">
@@ -241,6 +256,7 @@ export default function AdminDashboardClient() {
             Logout
           </button>
         </div>
+        {persistenceUnavailable && <p className="admin-error">{persistenceWarning}</p>}
         {message && <p className="admin-success">{message}</p>}
         {error && <p className="admin-error">{error}</p>}
       </section>

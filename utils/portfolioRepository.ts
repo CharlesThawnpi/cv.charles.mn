@@ -63,6 +63,9 @@ const setFallbackRecord = (record: PortfolioRecord) => {
 
 const getPortfolioTablePath = () => PORTFOLIO_TABLE;
 
+const getPersistenceUnavailableMessage = () =>
+  "Persistent portfolio storage is not configured. Set DATABASE_URL locally or connect Vercel Postgres so admin changes survive refreshes and deployments.";
+
 const asIsoString = (value: Date | string | null | undefined, fallback: string | null): string | null => {
   if (value instanceof Date) {
     return value.toISOString();
@@ -344,6 +347,10 @@ const getRecord = async (
     }
   }
 
+  if (mode === "strict") {
+    throw new Error(getPersistenceUnavailableMessage());
+  }
+
   const fallbackRecord = getFallbackRecord();
 
   return {
@@ -378,6 +385,10 @@ const persistRecord = async (
     }
   }
 
+  if (mode === "strict") {
+    throw new Error(getPersistenceUnavailableMessage());
+  }
+
   setFallbackRecord(record);
   return "local";
 };
@@ -405,7 +416,7 @@ export const getPublicPortfolioData = async (isPreview: boolean): Promise<Portfo
 };
 
 export const getAdminPortfolioData = async (): Promise<PortfolioAdminResult> => {
-  const { record, source } = await getRecord("strict");
+  const { record, source } = await getRecord("fallback");
 
   return {
     record,
